@@ -18,10 +18,10 @@ class Scene extends GameScene{
     setupInputs() {
         let self = this
         self.game.registerAction('a', () => {
-            this.player.move(-10)
+            this.player.move(-5)
         })
         self.game.registerAction('d', () => {
-            this.player.move(10)
+            this.player.move(5)
         })
     }
 }
