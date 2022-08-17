@@ -116,7 +116,6 @@ class Player extends Character {
             this.frameCount = this.frames.length - 1
         }
         this.texture = this.frames[this.frameCount]
-        if (this.frames.length === 12) console.log(123)
         // 设置当前为非移动状态
         // TODO 后续进行跳跃功能开发时要修改这里，因为跳跃也要设置状态
         this.isMoving = false

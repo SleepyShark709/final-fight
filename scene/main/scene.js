@@ -9,6 +9,10 @@ class Scene extends GameScene{
         player.y = 385
         this.player = player
         this.addElement(player)
+        let enemy = new Enemy(game)
+        enemy.x = 500
+        enemy.y = 364
+        this.addElement(enemy)
         this.setupInputs()
     }
     update() {

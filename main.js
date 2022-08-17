@@ -1,4 +1,6 @@
+
 const __main = () => {
+
     // 这个地方是加了一个滑动条来控制帧率
     let input = document.querySelector('#id-input-speed')
     let zhen = document.querySelector('.zhen')
@@ -14,42 +16,12 @@ const __main = () => {
     var images = {
         bg: 'image/bg.png',
         startbg: 'image/startbg.png',
-        run0: 'image/run/0.png',
-        run1: 'image/run/1.png',
-        run2: 'image/run/2.png',
-        run3: 'image/run/3.png',
-        run4: 'image/run/4.png',
-        run5: 'image/run/5.png',
-        idle0: 'image/idle-sword/0.png',
-        idle1: 'image/idle-sword/1.png',
-        idle2: 'image/idle-sword/2.png',
-        idle3: 'image/idle-sword/3.png',
-        idle4: 'image/idle-sword/4.png',
-        idle5: 'image/idle-sword/5.png',
-        attack1_0: 'image/attack/1-0.png',
-        attack1_1: 'image/attack/1-1.png',
-        attack1_2: 'image/attack/1-2.png',
-        attack1_3: 'image/attack/1-3.png',
-        attack1_4: 'image/attack/1-4.png',
-        attack1_5: 'image/attack/1-5.png',
-        attack2_0: 'image/attack/2-0.png',
-        attack2_1: 'image/attack/2-1.png',
-        attack2_2: 'image/attack/2-2.png',
-        attack2_3: 'image/attack/2-3.png',
-        attack2_4: 'image/attack/2-4.png',
-        attack2_5: 'image/attack/2-5.png',
-        attack3_0: 'image/attack/3-0.png',
-        attack3_1: 'image/attack/3-1.png',
-        attack3_2: 'image/attack/3-2.png',
-        attack3_3: 'image/attack/3-3.png',
-        attack3_4: 'image/attack/3-4.png',
-        attack3_5: 'image/attack/3-5.png',
-        jump0: 'image/jump/0.png',
-        jump1: 'image/jump/1.png',
-        jump2: 'image/jump/2.png',
-        jump3: 'image/jump/3.png',
-
     }
+    let playerImages = new PlayerImages().images
+    let enemyImages = new EnemyImages().images
+
+    images = Object.assign(images, playerImages)
+    images = Object.assign(images, enemyImages)
 
     var game = new Game(30, images, function(g) {
         // var s = SceneTitle.new(g)

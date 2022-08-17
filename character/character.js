@@ -2,21 +2,6 @@
 class Character {
     constructor(game) {
         this.game = game
-        // this.frames = [] // 要渲染的 frames 里面是图片
-        // this.idleFrame = [] // 闲置时的 frame
-        // this.texture = this.idleFrame[0] // 设置第一帧图片
-        // this.frameCount = 10 // 设置 frame 的数量
-        // this.w = this.texture.width // 图片宽
-        // this.h = this.texture.height // 图片高
-        // this.flipX = false // 是否进行 X 轴翻转
-        // this.isMoving = false // 是否在进行移动
-        // this.movingDirection = 'right' // 移动的方向
-        // this.cooldown = 10 // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
-        // this.isAttack = false // 是否在攻击
-        // this.attackType = 1 // 攻击类型，每次按下攻击会切换攻击类型，一共有3组，为攻击1、攻击2、攻击3
-        // this.gy = 10 // 重力加速度
-        // this.vy = 0 // y轴的速度
-        // this.isJump = false // 是否在跳跃
     }
 
     static new (game) {
