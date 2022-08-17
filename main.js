@@ -19,7 +19,24 @@ const __main = () => {
         idle3: 'image/idle-sword/3.png',
         idle4: 'image/idle-sword/4.png',
         idle5: 'image/idle-sword/5.png',
-
+        attack1_0: 'image/attack/1-0.png',
+        attack1_1: 'image/attack/1-1.png',
+        attack1_2: 'image/attack/1-2.png',
+        attack1_3: 'image/attack/1-3.png',
+        attack1_4: 'image/attack/1-4.png',
+        attack1_5: 'image/attack/1-5.png',
+        attack2_0: 'image/attack/2-0.png',
+        attack2_1: 'image/attack/2-1.png',
+        attack2_2: 'image/attack/2-2.png',
+        attack2_3: 'image/attack/2-3.png',
+        attack2_4: 'image/attack/2-4.png',
+        attack2_5: 'image/attack/2-5.png',
+        attack3_0: 'image/attack/3-0.png',
+        attack3_1: 'image/attack/3-1.png',
+        attack3_2: 'image/attack/3-2.png',
+        attack3_3: 'image/attack/3-3.png',
+        attack3_4: 'image/attack/3-4.png',
+        attack3_5: 'image/attack/3-5.png',
     }
 
     var game = new Game(30, images, function(g) {
