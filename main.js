@@ -17,6 +17,9 @@ const __main = () => {
         idle1: 'image/idle-sword/1.png',
         idle2: 'image/idle-sword/2.png',
         idle3: 'image/idle-sword/3.png',
+        idle4: 'image/idle-sword/4.png',
+        idle5: 'image/idle-sword/5.png',
+
     }
 
     var game = new Game(30, images, function(g) {
