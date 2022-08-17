@@ -8,11 +8,13 @@ class Player {
         this.attack1Frames = [] // 攻击类型1的 frame
         this.attack2Frames = [] // 攻击类型2的 frame
         this.attack3Frames = [] // 攻击类型3的 frame
+        this.jumpFrames = [] // 跳跃的 frame
         this.initIdleFrame(game) // 给 idleFrame 赋值
         this.initRunFrame(game) // 给 runFrames 赋值
         this.initAttackFrame(game, 1) // 给 attack1Frames 赋值
         this.initAttackFrame(game, 2) // 给 attack2Frames 赋值
         this.initAttackFrame(game, 3) // 给 attack3Frames 赋值
+        this.initJumpFrame(game) // 给 jumpFrames 赋值
         this.texture = this.idleFrame[0] // 设置第一帧图片
         this.frameCount = 10 // 设置 frame 的数量
         this.w = this.texture.width // 图片宽
@@ -23,6 +25,9 @@ class Player {
         this.cooldown = 10 // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
         this.isAttack = false // 是否在攻击
         this.attackType = 1 // 攻击类型，每次按下攻击会切换攻击类型，一共有3组，为攻击1、攻击2、攻击3
+        this.gy = 10 // 重力加速度
+        this.vy = 0 // y轴的速度
+        this.isJump = false // 是否在跳跃
     }
     initIdleFrame(game) {
         // 创建闲置时的 frame 数组，里面存放的是图片信息
@@ -58,20 +63,43 @@ class Player {
             }
         }
     }
+    initJumpFrame(game) {
+        for (let i = 0; i < 4; i++) {
+            let name = `jump${i}`
+            let t = game.textureByName(name)
+            for (let j = 0; j < 3; j++) {
+                this.jumpFrames.push(t)
+            }
+        }
+    }
     static new (game) {
         return new this(game)
     }
     jump() {
-        this.vy = -10
-        this.rotation = -45
+        // 只有人物在地面的时候才可以跳
+        if (this.y === 385) {
+            this.isJump = true
+            this.frames = this.jumpFrames
+            console.log(this.frames)
+            this.vy = -20
+        }
     }
     update () {
+        this.y += this.vy // 设置人物新的高度
+        this.vy += this.gy * 0.2 // 修改人物 y 轴方向的速度
+        if (this.y > 385){
+            this.y = 385 // 当人物 y 坐标大于地面时，让人物停在地面上
+            if (this.isJump === true) {
+                this.frames = this.idleFrame
+                this.isJump = false
+            }
+        }
         if (this.cooldown > 0) {
             // 设置冷却时间
             this.cooldown--
         }
         // 如果当前没有移动，则更改 frame 为闲置状态
-        if (this.isMoving === false && this.isAttack === false) {
+        if (this.isMoving === false && this.isAttack === false && this.isJump === false) {
             this.frames = this.idleFrame
         }
         // 判断用户没有移动时，置为闲置状态
@@ -90,6 +118,7 @@ class Player {
             this.frameCount = this.frames.length - 1
         }
         this.texture = this.frames[this.frameCount]
+        if (this.frames.length === 12) console.log(123)
         // 设置当前为非移动状态
         // TODO 后续进行跳跃功能开发时要修改这里，因为跳跃也要设置状态
         this.isMoving = false
@@ -127,8 +156,8 @@ class Player {
         }
     }
     move(x) {
-        // 在移动的时候更换动作
-        this.isMoving = true
+            // 在移动的时候更换动作
+            this.isMoving = true
         if (x < 0 && this.movingDirection === 'right') {
             // 当前向左移动，且上次移动方向是右
             // 那么要将人物向右移动他的宽度
@@ -140,6 +169,9 @@ class Player {
         this.movingDirection = x < 0 ? 'left' : 'right' // 重新设置新的移动方向
         this.x += x // 设置当前人物的 x 轴坐标
         this.flipX = x < 0; // 设置反转
-        this.frames = this.runFrames // 设置奔跑的 frame
+        if (this.isJump === false) {
+            this.frames = this.runFrames // 设置奔跑的 frame
+        }
+
     }
 }

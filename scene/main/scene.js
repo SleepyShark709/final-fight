@@ -26,5 +26,8 @@ class Scene extends GameScene{
         self.game.registerAction('j', () => {
             this.player.attack()
         })
+        self.game.registerAction('k', () => {
+            this.player.jump()
+        })
     }
 }

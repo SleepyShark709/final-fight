@@ -1,12 +1,19 @@
 const __main = () => {
     // 这个地方是加了一个滑动条来控制帧率
     let input = document.querySelector('#id-input-speed')
+    let zhen = document.querySelector('.zhen')
+    let fps = 50
     input.addEventListener('input', (event) => {
         let input = event.target
-        window.fps = Number(input.value)
+        fps = Number(input.value)
+        zhen.innerHTML = `帧率（${fps}）`
+        window.fps = fps
     })
+
+
     var images = {
         bg: 'image/bg.png',
+        startbg: 'image/startbg.png',
         run0: 'image/run/0.png',
         run1: 'image/run/1.png',
         run2: 'image/run/2.png',
@@ -37,6 +44,11 @@ const __main = () => {
         attack3_3: 'image/attack/3-3.png',
         attack3_4: 'image/attack/3-4.png',
         attack3_5: 'image/attack/3-5.png',
+        jump0: 'image/jump/0.png',
+        jump1: 'image/jump/1.png',
+        jump2: 'image/jump/2.png',
+        jump3: 'image/jump/3.png',
+
     }
 
     var game = new Game(30, images, function(g) {
