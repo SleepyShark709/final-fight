@@ -5,7 +5,7 @@
     <title>Final-Fight</title>
     <style>
         #id-canvas {
-            border: black 1px solid;
+            /*border: black 1px solid;*/
         }
     </style>
     <!--    game文件-->
@@ -14,7 +14,10 @@
     <script src="game/game_scene.js"></script>
     <script src="game/game_image.js"></script>
     <script src="game/game_animation.js"></script>
+    <script src="character/character.js"></script>
     <script src="character/player.js"></script>
+    <script src="character/enemy.js"></script>
+
 
     <!--    场景文件-->
     <script src="scene/main/label.js"></script>
@@ -26,12 +29,14 @@
     <script src="level.js"></script>
     <!--    配置数据   -->
     <script src="config.js"></script>
+    <script src="static/player-util.js"></script>
+    <script src="static/enemy-utils.js"></script>
 
 </head>
 <body>
     <canvas id="id-canvas" width="1024" height="512"></canvas>
     <hr>
-    <input id="id-input-speed" type="range" value= 50>
+    <input id="id-input-speed" type="range" value= 50><div class="zhen">`帧率（50）`</div>
     <div class="game-controls"></div>
     <script src="main.js"></script>
     <script>
@@ -39,59 +44,6 @@
         canvas.addEventListener('click', () => {
             console.log(`x is (${event.clientX}) y is (${event.clientY})`)
         })
-        const bindAll = function (sel, eventName, callback) {
-            log('bindall start')
-            var l = document.querySelectorAll(sel)
-            log('l is', l)
-            for (let i = 0; i < l.length; i++) {
-                var input = l[i]
-                input.addEventListener(eventName, function (event) {
-                    callback(event)
-                })
-            }
-        }
-        const templateControl = (key, item) => {
-            console.log('item', item)
-            let t = `
-                  <div>
-                    <label>
-                        <input class="game-auto-slider"
-                            type="range"
-                            value= "${item.value}"
-                            data-value="config.${key}"
-                            max="300"
-                        >
-                        ${item._comment}:<span class="game-label">150</span>
-                    </label>
-                </div>
-            `
-            return t
-        }
-        const insertContrls = () => {
-            let kyes = Object.keys(config)
-            let div = document.querySelector('.game-controls')
-            for (let k of kyes) {
-                let item = config[k]
-                let html = templateControl(k, item)
-                div.insertAdjacentHTML('beforeend', html)
-            }
-        }
-        const bindEvents = () => {
-            bindAll('.game-auto-slider', 'input', (event) => {
-                let target = event.target
-                let bindVar = target.dataset.value
-                let v = target.value
-                eval(bindVar + '.value =' + v)
-                let label = target.closest('label').querySelector('.game-label')
-                label.innerText = v
-            } )
-        }
-        const _main = () => {
-            // 从配置文件生成 html 控件
-            insertContrls()
-            bindEvents()
-        }
-        _main()
     </script>
 </body>
 </html>

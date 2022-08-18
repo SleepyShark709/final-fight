@@ -9,6 +9,10 @@ class Scene extends GameScene{
         player.y = 385
         this.player = player
         this.addElement(player)
+        let enemy = new Enemy(game)
+        enemy.x = 500
+        enemy.y = 364
+        this.addElement(enemy)
         this.setupInputs()
     }
     update() {
@@ -22,6 +26,12 @@ class Scene extends GameScene{
         })
         self.game.registerAction('d', () => {
             this.player.move(5)
+        })
+        self.game.registerAction('j', () => {
+            this.player.attack()
+        })
+        self.game.registerAction('k', () => {
+            this.player.jump()
         })
     }
 }
