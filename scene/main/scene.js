@@ -18,16 +18,28 @@ class Scene extends GameScene{
     }
     update() {
         super.update();
-        if (impact(this.player, this.enemy) === false) {
+        if (this.enemy.x + this.enemy.w + 30 < this.player.x || this.enemy.x > this.player.x + this.player.w + 30) {
             // 玩家和敌人没有碰撞的时候，敌人去自动寻找玩家
             if (this.enemy.x > this.player.x) {
                 this.enemy.move(-3)
-            } else if (this.enemy.y < this.player.x) {
+            } else {
                 this.enemy.move(3)
             }
         } else {
-            this.enemy.isMoving = false
+            this.enemy.attackEvent()
+            // this.enemy.isMoving = false
         }
+        //
+        // if (impact(this.player, this.enemy) === false) {
+        //     // 玩家和敌人没有碰撞的时候，敌人去自动寻找玩家
+        //     if (this.enemy.x > this.player.x) {
+        //         this.enemy.move(-3)
+        //     } else if (this.enemy.y < this.player.x) {
+        //         this.enemy.move(3)
+        //     }
+        // } else {
+        //     this.enemy.isMoving = false
+        // }
 
     }
 

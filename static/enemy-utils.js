@@ -27,6 +27,17 @@ class EnemyImages {
             ewalk5: 'image/enemy/walk/5.png',
             ewalk6: 'image/enemy/walk/6.png',
             ewalk7: 'image/enemy/walk/7.png',
+            eattack0: 'image/enemy/attack/0.png',
+            eattack1: 'image/enemy/attack/1.png',
+            eattack2: 'image/enemy/attack/2.png',
+            eattack3: 'image/enemy/attack/3.png',
+            eattack4: 'image/enemy/attack/4.png',
+            eattack5: 'image/enemy/attack/5.png',
+            eattack6: 'image/enemy/attack/6.png',
+            eattack7: 'image/enemy/attack/7.png',
+            eattack8: 'image/enemy/attack/8.png',
+            eattack9: 'image/enemy/attack/9.png',
+
         }
     }
 }

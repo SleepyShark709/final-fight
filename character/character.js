@@ -8,6 +8,8 @@ class Character {
         this.isMoving = false
         this.isDie = false // 是否死亡
         this.defaultLocation = 'right' // 默认朝向
+        this.cooldown = 10 // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
+
     }
 
     static new (game) {

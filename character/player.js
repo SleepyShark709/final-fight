@@ -118,6 +118,7 @@ class Player extends Character {
             this.frameCount = this.frames.length - 1
         }
         this.texture = this.frames[this.frameCount]
+
         // 设置当前为非移动状态
         // TODO 后续进行跳跃功能开发时要修改这里，因为跳跃也要设置状态
         this.isMoving = false
@@ -139,8 +140,7 @@ class Player extends Character {
             this.attackType += 1
             // 判断人物与敌人是否碰撞
             // if (impact(this, enemy)) {
-            if (this.x > enemy.x + 15 || this.x < enemy.x - 15) {
-                console.log('123')
+            if (this.x + this.w + 45 > enemy.x && this.x < enemy.x + enemy.w + 45) {
                 // 开始攻击, 删除敌人 TODO 这里应该在攻击动画播放结束的时候删除敌人,现在定时器是一种 hack 的方案。不应该这么做
                 setTimeout(() => {
                     // 暂时设置伤害值是 30-50 间的随机数

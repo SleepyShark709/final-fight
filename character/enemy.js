@@ -5,9 +5,11 @@ class Enemy extends Character {
         this.idleFrame = []
         this.dieFrame = [] // 死亡的 frame
         this.runFrames = [] // 奔跑时的 frame
+        this.attack1Frames = [] // 攻击类型1的 frame
         this.initFrames(game)
         this.initDieFrames(game)
         this.initRunFrame(game)
+        this.initAttackFrame(game) // 给 attack1Frames 赋值
         this.texture = this.idleFrame[0] // 设置第一帧图片
         this.frameCount = 10
         this.w = this.texture.width // 图片宽
@@ -20,6 +22,17 @@ class Enemy extends Character {
         this.AttackBar = new AttackValue(game, this.x, this.y)
         this.damageValue = 0
         this.defaultLocation = 'left' // 默认朝向
+        this.isAttack = false
+        this.cooldown = 0
+    }
+    initAttackFrame(game) {
+        for (let i = 0; i < 10; i++) {
+            let name = `eattack${i}`
+            let t = game.textureByName(name)
+            for (let j = 0; j < 3; j++) {
+                this.attack1Frames.push(t)
+            }
+        }
     }
     initRunFrame(game) {
         for (let i = 0; i < 8; i++) {
@@ -49,13 +62,17 @@ class Enemy extends Character {
         }
     }
     update() {
+        if (this.cooldown > 0) {
+            // 设置冷却时间
+            this.cooldown--
+        }
         this.HPBar.update(this.HP / this.defaultHp)
         this.HPBar.x = this.x + this.w / 2 +6
         this.AttackBar.update(Number(this.damageValue))
         this.AttackBar.x = this.x + this.w / 2 +6
         // 判断用户没有移动时，置为闲置状态
         this.frameCount--
-        if (this.isDie === false && this.isMoving === false) {
+        if (this.isDie === false && this.isMoving === false && this.isAttack === false) {
             this.frames = this.idleFrame
         }
         if (this.frameCount < 0 && this.isDie) {
@@ -63,6 +80,9 @@ class Enemy extends Character {
             this.frames = []
             this.delete(this)
         } else if (this.frameCount < 0) {
+            this.frameCount = this.frames.length - 1
+        }
+        if (!this.frames[this.frameCount]) {
             this.frameCount = this.frames.length - 1
         }
         this.texture = this.frames[this.frameCount]
@@ -93,6 +113,16 @@ class Enemy extends Character {
             this.isDie = true
             this.frames = this.dieFrame
             this.frameCount = this.frames.length - 1
+        }
+    }
+    attackEvent(){
+        if (this.cooldown === 0 && this.isDie === false) {
+            this.cooldown = 10 // 设置冷却为10帧
+            if (this.attackType > 3) {
+                this.attackType = 1
+            }
+            this.frames = this.attack1Frames // 设置奔跑的 frame
+            this.isAttack = true
         }
     }
 }
