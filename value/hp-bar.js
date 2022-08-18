@@ -1,0 +1,31 @@
+class HpBar {
+    constructor(game, x, y) {
+        this.game = game
+        this.x = x // 血条的 x
+        this.y = y // 血条的 y
+        this.w = 50 // 血条的宽度
+        this.h = 10 // 血条的高度
+        this.percentage = 1 // 血条的百分比, 1 -> 100% 0.8 -> 80%
+        this.speed = 0.05 // 血条消失的速度
+        this.greenW = this.w // 绿色条长度
+        this.redW = 0 // 红色条长度
+    }
+
+    update(percentage) {
+        if (this.percentage > percentage) {
+            // 如果当前的百分比大于目标百分比就让当前百分比按速度减少
+            this.percentage -= this.speed
+        }
+        this.greenW = this.w * this.percentage < 0 ? 0 : this.w * this.percentage // 当绿色条的宽度小于0的时候，让其为0
+        this.redW = this.w - this.w * (this.percentage) > this.w ? this.w : this.w - this.w * (this.percentage) // 当红色条的宽度大于默认宽的时候，让其为默认宽
+    }
+
+    draw() {
+        // 画绿色血条
+        this.game.context.fillStyle = "green"
+        this.game.context.fillRect(this.x, this.y, this.greenW, 10)
+        // 画红色血条
+        this.game.context.fillStyle = 'red'
+        this.game.context.fillRect(this.x + this.w * this.percentage < this.x ? this.x : this.x + this.w * this.percentage, this.y, this.redW, 10)
+    }
+}

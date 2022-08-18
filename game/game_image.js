@@ -12,8 +12,6 @@ class GameImage {
         this.y = y
         this.w = w || this.texture.width
         this.h = h || this.texture.height
-        this.flipY = false
-        this.rotation = 0
     }
     static new(game, name) {
         var i = new this(game, name)
@@ -26,8 +24,3 @@ class GameImage {
 
     }
 }
-// class Player extends GameImage{
-//     constructor(game, name) {
-//         super(game, name);
-//     }
-// }

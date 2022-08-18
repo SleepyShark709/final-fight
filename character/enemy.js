@@ -3,11 +3,21 @@ class Enemy extends Character {
         super(game);
         this.frames = [] // 要渲染的 frames 里面是图片
         this.idleFrame = []
+        this.dieFrame = [] // 死亡的 frame
         this.initFrames(game)
+        this.initDieFrames(game)
         this.texture = this.idleFrame[0] // 设置第一帧图片
         this.frameCount = 10
         this.w = this.texture.width // 图片宽
         this.h = this.texture.height // 图片高
+        this.defaultHp = 100 // 默认设置 100 血
+        this.HP = 100 // 当前血量
+        this.isDie = false // 是否死亡
+        this.x = 584
+        this.y = 364
+        this.HPBar = new HpBar(game, this.x, this.y + 20)
+        this.AttackBar = new AttackValue(game, this.x, this.y)
+        this.damageValue = 0
     }
     initFrames(game) {
         for (let i = 0; i < 8; i++) {
@@ -18,20 +28,36 @@ class Enemy extends Character {
             }
         }
     }
+    initDieFrames(game) {
+        for (let i = 0; i < 10; i++) {
+            let name = `edie${i}`
+            let t = game.textureByName(name)
+            for (let j = 0; j < 3; j++) {
+                this.dieFrame.push(t)
+            }
+        }
+    }
     update() {
+        this.HPBar.update(this.HP / this.defaultHp)
+        this.AttackBar.update(Number(this.damageValue))
         // 判断用户没有移动时，置为闲置状态
         this.frameCount--
-        this.frames = this.idleFrame
+        if (this.isDie === false) {
+            this.frames = this.idleFrame
+        }
         if (this.frameCount < 0) {
-            // if (this.isAttack === true) {
-            //     this.frames = this.idleFrame
-            //     this.isAttack = false
-            // }
+            if (this.isDie) {
+                // 这里可以删除这个元素了
+                this.frames = []
+                this.delete(this)
+            }
             this.frameCount = this.frames.length - 1
         }
         this.texture = this.frames[this.frameCount]
     }
     draw () {
+        this.HPBar.draw()
+        this.AttackBar.draw()
         let context = this.game.context
         context.save()
         let w2 = this.w / 2
@@ -43,5 +69,18 @@ class Enemy extends Character {
         context.translate(-w2,  -h2)
         this.texture && context.drawImage(this.texture, 0, 0)
         context.restore()
+    }
+    // 被攻击到的事件
+    killEvent(damageValue) {
+        // damageValue 是伤害值
+        this.HP -= damageValue // 掉血
+        this.damageValue = damageValue
+        this.AttackBar.setShow(true)
+        if (this.HP < 0) {
+            // 血条为 0 的时候，死亡
+            this.isDie = true
+            this.frames = this.dieFrame
+            this.frameCount = this.frames.length - 1
+        }
     }
 }

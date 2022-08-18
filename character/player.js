@@ -141,7 +141,9 @@ class Player extends Character {
             if ((reactIntersects(this, enemy) || reactIntersects(enemy, this))) {
                 // 开始攻击, 删除敌人 TODO 这里应该在攻击动画播放结束的时候删除敌人,现在定时器是一种 hack 的方案。不应该这么做
                 setTimeout(() => {
-                    scene.deleteElement(enemy)
+                    // 暂时设置伤害值是 30-50 间的随机数
+                    let damageValue = Math.round(Math.random()*20+30)
+                    enemy.killEvent(damageValue)
                 }, 500)
             }
             console.log('attack')

@@ -8,6 +8,10 @@ class Character {
         return new this(game)
     }
 
+    delete(element) {
+        this.game.deleteImage(element)
+    }
+
     update() {
 
     }

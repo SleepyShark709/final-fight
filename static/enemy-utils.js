@@ -9,6 +9,16 @@ class EnemyImages {
             eidle5: 'image/enemy/idle/idle5.png',
             eidle6: 'image/enemy/idle/idle6.png',
             eidle7: 'image/enemy/idle/idle7.png',
+            edie0: 'image/enemy/die/0.png',
+            edie1: 'image/enemy/die/1.png',
+            edie2: 'image/enemy/die/2.png',
+            edie3: 'image/enemy/die/3.png',
+            edie4: 'image/enemy/die/4.png',
+            edie5: 'image/enemy/die/5.png',
+            edie6: 'image/enemy/die/6.png',
+            edie7: 'image/enemy/die/7.png',
+            edie8: 'image/enemy/die/8.png',
+            edie9: 'image/enemy/die/9.png',
         }
     }
 }

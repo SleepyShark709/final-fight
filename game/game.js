@@ -26,6 +26,9 @@ class Game {
     draw ()  {
         this.scene.draw()
     }
+    deleteImage(element) {
+        this.scene.deleteElement(element)
+    }
     registerAction = (key, callback) => {
         this.actions[key] = callback
     }
