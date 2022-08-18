@@ -92,6 +92,8 @@ class Player extends Character {
                 this.isJump = false
             }
         }
+        // 当角色x位置超出画面，将其限制在画面内
+        this.x = this.x < this.w ? this.w : this.x > 1024 - this.w ? 1024 - this.w * 2 : this.x
         if (this.cooldown > 0) {
             // 设置冷却时间
             this.cooldown--
