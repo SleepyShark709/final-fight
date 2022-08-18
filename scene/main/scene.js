@@ -18,16 +18,7 @@ class Scene extends GameScene{
     }
     update() {
         super.update();
-        // 判断人物与敌人是否碰撞
-        if ((reactIntersects(this.player, this.enemy) || reactIntersects(this.enemy, this.player))) {
-            // 判断人物是否在攻击状态下
-            if (this.player.isAttack === true) {
-                // 开始攻击, 删除敌人 TODO 这里应该在攻击动画播放结束的时候删除敌人,现在定时器是一种 hack 的方案。不应该这么做
-                setTimeout(() => {
-                    this.deleteElement(this.enemy)
-                }, 500)
-            }
-        }
+
     }
 
     setupInputs() {
@@ -39,7 +30,7 @@ class Scene extends GameScene{
             this.player.move(5)
         })
         self.game.registerAction('j', () => {
-            this.player.attack()
+            this.player.attack(this.enemy, this)
         })
         self.game.registerAction('k', () => {
             this.player.jump()

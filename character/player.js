@@ -122,7 +122,7 @@ class Player extends Character {
         // TODO 后续进行跳跃功能开发时要修改这里，因为跳跃也要设置状态
         this.isMoving = false
     }
-    attack() {
+    attack(enemy, scene) {
         let ATTACK_FRAMES_MAP = {
             1: this.attack1Frames,
             2: this.attack2Frames,
@@ -137,6 +137,13 @@ class Player extends Character {
             this.frameCount = 20
             this.isAttack = true
             this.attackType += 1
+            // 判断人物与敌人是否碰撞
+            if ((reactIntersects(this, enemy) || reactIntersects(enemy, this))) {
+                // 开始攻击, 删除敌人 TODO 这里应该在攻击动画播放结束的时候删除敌人,现在定时器是一种 hack 的方案。不应该这么做
+                setTimeout(() => {
+                    scene.deleteElement(enemy)
+                }, 500)
+            }
             console.log('attack')
         }
     }
