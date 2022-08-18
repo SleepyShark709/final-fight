@@ -4,20 +4,31 @@ class Enemy extends Character {
         this.frames = [] // 要渲染的 frames 里面是图片
         this.idleFrame = []
         this.dieFrame = [] // 死亡的 frame
+        this.runFrames = [] // 奔跑时的 frame
         this.initFrames(game)
         this.initDieFrames(game)
+        this.initRunFrame(game)
         this.texture = this.idleFrame[0] // 设置第一帧图片
         this.frameCount = 10
         this.w = this.texture.width // 图片宽
         this.h = this.texture.height // 图片高
         this.defaultHp = 100 // 默认设置 100 血
         this.HP = 100 // 当前血量
-        this.isDie = false // 是否死亡
         this.x = 584
         this.y = 364
         this.HPBar = new HpBar(game, this.x, this.y + 20)
         this.AttackBar = new AttackValue(game, this.x, this.y)
         this.damageValue = 0
+        this.defaultLocation = 'left' // 默认朝向
+    }
+    initRunFrame(game) {
+        for (let i = 0; i < 8; i++) {
+            let name = `ewalk${i}`
+            let t = game.textureByName(name)
+            for (let j = 0; j < 3; j++) {
+                this.runFrames.push(t)
+            }
+        }
     }
     initFrames(game) {
         for (let i = 0; i < 8; i++) {
@@ -39,18 +50,19 @@ class Enemy extends Character {
     }
     update() {
         this.HPBar.update(this.HP / this.defaultHp)
+        this.HPBar.x = this.x + this.w / 2 +6
         this.AttackBar.update(Number(this.damageValue))
+        this.AttackBar.x = this.x + this.w / 2 +6
         // 判断用户没有移动时，置为闲置状态
         this.frameCount--
-        if (this.isDie === false) {
+        if (this.isDie === false && this.isMoving === false) {
             this.frames = this.idleFrame
         }
-        if (this.frameCount < 0) {
-            if (this.isDie) {
-                // 这里可以删除这个元素了
-                this.frames = []
-                this.delete(this)
-            }
+        if (this.frameCount < 0 && this.isDie) {
+            // 这里可以删除这个元素了
+            this.frames = []
+            this.delete(this)
+        } else if (this.frameCount < 0) {
             this.frameCount = this.frames.length - 1
         }
         this.texture = this.frames[this.frameCount]

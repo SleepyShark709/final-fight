@@ -19,6 +19,14 @@ class EnemyImages {
             edie7: 'image/enemy/die/7.png',
             edie8: 'image/enemy/die/8.png',
             edie9: 'image/enemy/die/9.png',
+            ewalk0: 'image/enemy/walk/0.png',
+            ewalk1: 'image/enemy/walk/1.png',
+            ewalk2: 'image/enemy/walk/2.png',
+            ewalk3: 'image/enemy/walk/3.png',
+            ewalk4: 'image/enemy/walk/4.png',
+            ewalk5: 'image/enemy/walk/5.png',
+            ewalk6: 'image/enemy/walk/6.png',
+            ewalk7: 'image/enemy/walk/7.png',
         }
     }
 }

@@ -2,6 +2,12 @@
 class Character {
     constructor(game) {
         this.game = game
+        this.runFrames = [] // 奔跑时的 frame
+        this.flipX = false
+        this.isJump = false
+        this.isMoving = false
+        this.isDie = false // 是否死亡
+        this.defaultLocation = 'right' // 默认朝向
     }
 
     static new (game) {
@@ -13,7 +19,11 @@ class Character {
     }
 
     update() {
-
+        // 如果当前没有移动，则更改 frame 为闲置状态
+        if (this.isMoving === false && this.isAttack === false && this.isJump === false) {
+            this.frames = this.idleFrame
+        }
+        this.isMoving = false
     }
     draw () {
         let context = this.game.context
@@ -30,22 +40,23 @@ class Character {
     }
 
     move(x) {
-        // 在移动的时候更换动作
-        this.isMoving = true
-        if (x < 0 && this.movingDirection === 'right') {
-            // 当前向左移动，且上次移动方向是右
-            // 那么要将人物向右移动他的宽度
-            this.x += this.w
-        } else if (x > 0 && this.movingDirection === 'left') {
-            // 当前向右移动，且上次移动方向是左
-            this.x -= this.w
+        if (this.isDie === false) {
+            // 在移动的时候更换动作
+            this.isMoving = true
+            if (x < 0 && this.movingDirection === 'right') {
+                // 当前向左移动，且上次移动方向是右
+                // 那么要将人物向右移动他的宽度
+                this.x += this.w
+            } else if (x > 0 && this.movingDirection === 'left') {
+                // 当前向右移动，且上次移动方向是左
+                this.x -= this.w
+            }
+            this.movingDirection = x < 0 ? 'left' : 'right' // 重新设置新的移动方向
+            this.x += x // 设置当前人物的 x 轴坐标
+            this.flipX = this.defaultLocation === 'right' ? x < 0 : this.defaultLocation === 'left' ? x > 0 : false; // 设置反转
+            if (this.isJump === false) {
+                this.frames = this.runFrames // 设置奔跑的 frame
+            }
         }
-        this.movingDirection = x < 0 ? 'left' : 'right' // 重新设置新的移动方向
-        this.x += x // 设置当前人物的 x 轴坐标
-        this.flipX = x < 0; // 设置反转
-        if (this.isJump === false) {
-            this.frames = this.runFrames // 设置奔跑的 frame
-        }
-
     }
 }
