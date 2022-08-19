@@ -22,7 +22,7 @@ class Enemy extends Character {
         this.AttackBar = new AttackValue(game, this.x, this.y)
         this.damageValue = 0 // 受到的攻击伤害
         this.defaultLocation = 'right' // 默认朝向
-        this.cooldown = COOL_DOWN
+        this.cooldown = ENEMY_COOL_DOWN
         this.isDead = false // 死亡状态
         this.isPlayer = false // 是否是玩家
     }
@@ -63,6 +63,7 @@ class Enemy extends Character {
         }
     }
     update() {
+        // TODO 设置一个敌人挥刀的间隔时间
         if (this.cooldown > 0) {
             // 设置冷却时间
             this.cooldown--
@@ -78,12 +79,12 @@ class Enemy extends Character {
         if (this.isDie === false && this.isMoving === false && this.isAttack === false) {
             this.frames = this.idleFrame
         }
+
         if (this.frameCount < 0 && this.isDie) {
             // 这里可以删除这个元素了
             this.frameCount = 0
             this.isDead = true
             this.HPBar.remove()
-
         } else if (this.frameCount < 0) {
             this.frameCount = this.frames.length - 1
         }
@@ -115,7 +116,8 @@ class Enemy extends Character {
     }
     attackEvent(){
         if (this.cooldown === 0 && this.isDie === false) {
-            this.cooldown = COOL_DOWN // 设置冷却为10帧
+            console.log('enemy attack')
+            this.cooldown = ENEMY_COOL_DOWN // 设置冷却为10帧
             this.frames = this.attack1Frames // 设置攻击的 frame
             this.isAttack = true
         }
