@@ -22,7 +22,6 @@ class Enemy extends Character {
         this.AttackBar = new AttackValue(game, this.x, this.y)
         this.damageValue = 0
         this.defaultLocation = 'right' // 默认朝向
-        this.isAttack = false
         this.cooldown = 0
         this.isDead = false // 死亡状态
         this.isPlayer = false // 是否是玩家
@@ -111,15 +110,18 @@ class Enemy extends Character {
     // 被攻击到的事件
     killEvent(damageValue) {
         // damageValue 是伤害值
-        this.HP -= damageValue // 掉血
-        this.damageValue = damageValue
-        this.AttackBar.setShow(true)
-        if (this.HP < 0) {
-            // 血条为 0 的时候，死亡
-            this.isDie = true
-            this.frames = this.dieFrame
-            this.frameCount = this.frames.length - 1
+        if (this.isDead === false) {
+            this.HP -= damageValue // 掉血
+            this.damageValue = damageValue
+            this.AttackBar.setShow(true)
+            if (this.HP < 0) {
+                // 血条为 0 的时候，死亡
+                this.isDie = true
+                this.frames = this.dieFrame
+                this.frameCount = this.frames.length - 1
+            }
         }
+
     }
     attackEvent(){
         if (this.cooldown === 0 && this.isDie === false) {

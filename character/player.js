@@ -24,7 +24,6 @@ class Player extends Character {
         this.isMoving = false // 是否在进行移动
         this.movingDirection = 'right' // 移动的方向
         this.cooldown = 10 // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
-        this.isAttack = false // 是否在攻击
         this.attackType = 1 // 攻击类型，每次按下攻击会切换攻击类型，一共有3组，为攻击1、攻击2、攻击3
         this.gy = 10 // 重力加速度
         this.vy = 0 // y轴的速度

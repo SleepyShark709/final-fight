@@ -10,6 +10,8 @@ class Character {
         this.defaultLocation = 'right' // 默认朝向
         this.cooldown = 10 // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
         this.movingDirection = 'left' // 默认前进方向
+        this.isAttack = false // 是否在攻击
+
     }
 
     static new (game) {
@@ -58,7 +60,7 @@ class Character {
             this.movingDirection = x < 0 ? 'left' : 'right' // 重新设置新的移动方向
             this.x += x // 设置当前人物的 x 轴坐标
             this.flipX = this.defaultLocation === 'right' ? x < 0 : this.defaultLocation === 'left' ? x > 0 : false; // 设置反转
-            if (this.isJump === false) {
+            if (this.isJump === false && this.isAttack === false) {
                 this.frames = this.runFrames // 设置奔跑的 frame
             }
         }
