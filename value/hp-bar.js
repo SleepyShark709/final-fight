@@ -9,6 +9,10 @@ class HpBar {
         this.speed = 0.05 // 血条消失的速度
         this.greenW = this.w // 绿色条长度
         this.redW = 0 // 红色条长度
+        this.isRemove = false // 是否要画血条
+    }
+    remove() {
+        this.isRemove = true
     }
 
     update(percentage) {
@@ -21,6 +25,9 @@ class HpBar {
     }
 
     draw() {
+        if (this.isRemove) {
+            return
+        }
         // 画绿色血条
         this.game.context.fillStyle = "green"
         this.game.context.fillRect(this.x, this.y, this.greenW, 10)

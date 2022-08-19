@@ -18,7 +18,7 @@ class Scene extends GameScene{
     }
     update() {
         super.update();
-        if (this.enemy.x + this.enemy.w + 30 < this.player.x || this.enemy.x > this.player.x + this.player.w + 30) {
+        if (this.enemy.x + this.enemy.w < this.player.x || this.enemy.x > this.player.x + this.player.w) {
             // 玩家和敌人没有碰撞的时候，敌人去自动寻找玩家
             if (this.enemy.x > this.player.x) {
                 this.enemy.move(-3)

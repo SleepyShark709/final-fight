@@ -21,12 +21,14 @@ class Enemy extends Character {
         this.HPBar = new HpBar(game, this.x, this.y + 20)
         this.AttackBar = new AttackValue(game, this.x, this.y)
         this.damageValue = 0
-        this.defaultLocation = 'left' // 默认朝向
+        this.defaultLocation = 'right' // 默认朝向
         this.isAttack = false
         this.cooldown = 0
+        this.isDead = false // 死亡状态
+        this.isPlayer = false // 是否是玩家
     }
     initAttackFrame(game) {
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 8; i++) {
             let name = `eattack${i}`
             let t = game.textureByName(name)
             for (let j = 0; j < 3; j++) {
@@ -35,7 +37,7 @@ class Enemy extends Character {
         }
     }
     initRunFrame(game) {
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 5; i++) {
             let name = `ewalk${i}`
             let t = game.textureByName(name)
             for (let j = 0; j < 3; j++) {
@@ -44,7 +46,7 @@ class Enemy extends Character {
         }
     }
     initFrames(game) {
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 4; i++) {
             let name = `eidle${i}`
             let t = game.textureByName(name)
             for (let j = 0; j < 3; j++) {
@@ -53,7 +55,7 @@ class Enemy extends Character {
         }
     }
     initDieFrames(game) {
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 4; i++) {
             let name = `edie${i}`
             let t = game.textureByName(name)
             for (let j = 0; j < 3; j++) {
@@ -67,18 +69,22 @@ class Enemy extends Character {
             this.cooldown--
         }
         this.HPBar.update(this.HP / this.defaultHp)
-        this.HPBar.x = this.x + this.w / 2 +6
+        this.HPBar.x = this.movingDirection === this.defaultLocation ? this.x + this.w / 4 :this.x + this.w / 2 - 5 // 未翻身的情况下
         this.AttackBar.update(Number(this.damageValue))
         this.AttackBar.x = this.x + this.w / 2 +6
         // 判断用户没有移动时，置为闲置状态
-        this.frameCount--
+        if (this.isDead === false) {
+            this.frameCount--
+        }
         if (this.isDie === false && this.isMoving === false && this.isAttack === false) {
             this.frames = this.idleFrame
         }
         if (this.frameCount < 0 && this.isDie) {
             // 这里可以删除这个元素了
-            this.frames = []
-            this.delete(this)
+            this.frameCount = 0
+            this.isDead = true
+            this.HPBar.remove()
+
         } else if (this.frameCount < 0) {
             this.frameCount = this.frames.length - 1
         }

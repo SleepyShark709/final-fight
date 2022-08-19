@@ -29,6 +29,8 @@ class Player extends Character {
         this.gy = 10 // 重力加速度
         this.vy = 0 // y轴的速度
         this.isJump = false // 是否在跳跃
+        this.isPlayer = true // 是否是玩家
+
     }
     initIdleFrame(game) {
         // 创建闲置时的 frame 数组，里面存放的是图片信息
