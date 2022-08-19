@@ -100,6 +100,7 @@ class Enemy extends Character {
     }
     // 被攻击到的事件
     killEvent(damageValue) {
+        console.log('受到伤害')
         // damageValue 是伤害值
         if (this.isDead === false) {
             this.HP -= damageValue // 掉血

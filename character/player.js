@@ -143,8 +143,11 @@ class Player extends Character {
             // 判断人物与敌人是否碰撞
             // this.x > enemy.x - 15 - this.w // 当玩家在敌人左侧 15 个像素点
             // enemy.x + enemy.w + 15 > this.x // 当玩家在敌人右侧 15 个像素点
-            if (this.x > enemy.x - this.w - 15&& this.x < enemy.x - this.w + 15) {
-                console.log('123')
+            // console.log('当玩家在敌人左侧 15 个像素点', this.x > enemy.x - 5 - this.w)
+            // console.log('当玩家在敌人右侧 15 个像素点', this.x < enemy.x + enemy.w + 5)
+            // 逻辑是敌人和玩家的图片解除到的时候，其实肉眼看是没有接触到的（因为有空白部分），所以要让图片负接触一些，才是肉眼可见的打击到了
+            if (this.x > enemy.x + 10 - this.w && this.x < enemy.x + enemy.w - 10) {
+                console.log('开始攻击')
                 // 开始攻击, 删除敌人 TODO 这里应该在攻击动画播放结束的时候删除敌人,现在定时器是一种 hack 的方案。不应该这么做
                 setTimeout(() => {
                     // 暂时设置伤害值是 30-50 间的随机数
