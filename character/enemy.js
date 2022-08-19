@@ -11,53 +11,53 @@ class Enemy extends Character {
         this.initRunFrame(game)
         this.initAttackFrame(game) // 给 attack1Frames 赋值
         this.texture = this.idleFrame[0] // 设置第一帧图片
-        this.frameCount = 10
+        this.frameCount = 0
         this.w = this.texture.width // 图片宽
         this.h = this.texture.height // 图片高
-        this.defaultHp = 100 // 默认设置 100 血
-        this.HP = 100 // 当前血量
+        this.defaultHp = ENEMY_HP // 默认设置 100 血
+        this.HP = ENEMY_HP // 当前血量
         this.x = 584
         this.y = 364
         this.HPBar = new HpBar(game, this.x, this.y + 20)
         this.AttackBar = new AttackValue(game, this.x, this.y)
-        this.damageValue = 0
+        this.damageValue = 0 // 受到的攻击伤害
         this.defaultLocation = 'right' // 默认朝向
-        this.cooldown = 0
+        this.cooldown = COOL_DOWN
         this.isDead = false // 死亡状态
         this.isPlayer = false // 是否是玩家
     }
     initAttackFrame(game) {
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < ENEMY_ATTACK_NUMBER; i++) {
             let name = `eattack${i}`
             let t = game.textureByName(name)
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
                 this.attack1Frames.push(t)
             }
         }
     }
     initRunFrame(game) {
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < ENEMY_RUN_NUMBER; i++) {
             let name = `ewalk${i}`
             let t = game.textureByName(name)
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
                 this.runFrames.push(t)
             }
         }
     }
     initFrames(game) {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < ENEMY_IDLE_NUMBER; i++) {
             let name = `eidle${i}`
             let t = game.textureByName(name)
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
                 this.idleFrame.push(t)
             }
         }
     }
     initDieFrames(game) {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < ENEMY_DIE_NUMBER; i++) {
             let name = `edie${i}`
             let t = game.textureByName(name)
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
                 this.dieFrame.push(t)
             }
         }
@@ -70,7 +70,7 @@ class Enemy extends Character {
         this.HPBar.update(this.HP / this.defaultHp)
         this.HPBar.x = this.movingDirection === this.defaultLocation ? this.x + this.w / 4 :this.x + this.w / 2 - 5 // 未翻身的情况下
         this.AttackBar.update(Number(this.damageValue))
-        this.AttackBar.x = this.x + this.w / 2 +6
+        this.AttackBar.x = this.x + this.w / 2 + 6
         // 判断用户没有移动时，置为闲置状态
         if (this.isDead === false) {
             this.frameCount--
@@ -93,19 +93,9 @@ class Enemy extends Character {
         this.texture = this.frames[this.frameCount]
     }
     draw () {
+        super.draw()
         this.HPBar.draw()
         this.AttackBar.draw()
-        let context = this.game.context
-        context.save()
-        let w2 = this.w / 2
-        let h2 = this.h / 2
-        context.translate(this.x + w2, this.y + h2)
-        if (this.flipX) {
-            context.scale(-1, 1)
-        }
-        context.translate(-w2,  -h2)
-        this.texture && context.drawImage(this.texture, 0, 0)
-        context.restore()
     }
     // 被攻击到的事件
     killEvent(damageValue) {
@@ -125,11 +115,8 @@ class Enemy extends Character {
     }
     attackEvent(){
         if (this.cooldown === 0 && this.isDie === false) {
-            this.cooldown = 10 // 设置冷却为10帧
-            if (this.attackType > 3) {
-                this.attackType = 1
-            }
-            this.frames = this.attack1Frames // 设置奔跑的 frame
+            this.cooldown = COOL_DOWN // 设置冷却为10帧
+            this.frames = this.attack1Frames // 设置攻击的 frame
             this.isAttack = true
         }
     }

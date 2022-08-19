@@ -17,15 +17,15 @@ class Player extends Character {
         this.initAttackFrame(game, 3) // 给 attack3Frames 赋值
         this.initJumpFrame(game) // 给 jumpFrames 赋值
         this.texture = this.idleFrame[0] // 设置第一帧图片
-        this.frameCount = 10 // 设置 frame 的数量
+        this.frameCount = 0 // 设置 frame 的数量
         this.w = this.texture.width // 图片宽
         this.h = this.texture.height // 图片高
         this.flipX = false // 是否进行 X 轴翻转
         this.isMoving = false // 是否在进行移动
         this.movingDirection = 'right' // 移动的方向
-        this.cooldown = 10 // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
+        this.cooldown = COOL_DOWN // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
         this.attackType = 1 // 攻击类型，每次按下攻击会切换攻击类型，一共有3组，为攻击1、攻击2、攻击3
-        this.gy = 10 // 重力加速度
+        this.gy = GRAVITATIONAL_ACCELERATION // 重力加速度
         this.vy = 0 // y轴的速度
         this.isJump = false // 是否在跳跃
         this.isPlayer = true // 是否是玩家
@@ -33,20 +33,20 @@ class Player extends Character {
     }
     initIdleFrame(game) {
         // 创建闲置时的 frame 数组，里面存放的是图片信息
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < PLAYER_IDLE_IMAGE_NUMBER; i++) {
             let name = `idle${i}`
             let t = game.textureByName(name)
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
                 this.idleFrame.push(t)
             }
         }
     }
     initRunFrame(game) {
         // 创建奔跑时的 frame 数组，里面存放的是图片信息
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < PLAYER_RUN_IMAGE_NUMBER; i++) {
             let name = `run${i}`
             let t = game.textureByName(name)
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
                 this.runFrames.push(t)
             }
         }
@@ -57,19 +57,20 @@ class Player extends Character {
             2: this.attack2Frames,
             3: this.attack3Frames
         }
-        for (let i = 0; i < 6; i++) {
+        let index = type === 3 ? PLAYER_ATTACK_TYPE_3_NUMBER : PLAYER_ATTACK_TYPE_1_OR_2_NUMBER
+        for (let i = 0; i < index; i++) {
             let name = `attack${type}_${i}`
             let t = game.textureByName(name)
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
                 ATTACK_MAP[type].push(t)
             }
         }
     }
     initJumpFrame(game) {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < PLAYER_JUMP_IMAGE_NUMBER; i++) {
             let name = `jump${i}`
             let t = game.textureByName(name)
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
                 this.jumpFrames.push(t)
             }
         }
@@ -79,13 +80,12 @@ class Player extends Character {
         if (this.y === 385) {
             this.isJump = true
             this.frames = this.jumpFrames
-            console.log(this.frames)
-            this.vy = -20
+            this.vy = -JUMP_HEIGHT
         }
     }
     update () {
         this.y += this.vy // 设置人物新的高度
-        this.vy += this.gy * 0.2 // 修改人物 y 轴方向的速度
+        this.vy += this.gy * GRAVITATIONAL_ACCELERATION_PERCENT // 修改人物 y 轴方向的速度
         if (this.y > 385){
             this.y = 385 // 当人物 y 坐标大于地面时，让人物停在地面上
             if (this.isJump === true) {
@@ -94,7 +94,7 @@ class Player extends Character {
             }
         }
         // 当角色x位置超出画面，将其限制在画面内
-        this.x = this.x < this.w ? this.w : this.x > 1024 - this.w ? 1024 - this.w * 2 : this.x
+        this.x = this.x < this.w ? this.w : this.x > this.game.canvasWidth - this.w ? this.game.canvasWidth - this.w * 2 : this.x
         if (this.cooldown > 0) {
             // 设置冷却时间
             this.cooldown--
@@ -131,21 +131,24 @@ class Player extends Character {
             3: this.attack3Frames,
         }
         if (this.cooldown === 0) {
-            this.cooldown = 10 // 设置冷却为10帧
-            if (this.attackType > 3) {
+            this.cooldown = COOL_DOWN // 设置冷却为10帧
+            if (this.attackType > PLAYER_ATTACK_TYPE) {
+                // 当攻击的枚举值超过当前枚举数量时，重置攻击枚举值
                 this.attackType = 1
             }
             this.frames = ATTACK_FRAMES_MAP[this.attackType] // 设置奔跑的 frame
-            this.frameCount = 20
+            this.frameCount = PLAYER_ATTACK_TYPE_1_OR_2_NUMBER * RENDER_IMAGE_NUMBER
             this.isAttack = true
-            this.attackType += 1
+            this.attackType += 1 // 攻击枚举值 + 1
             // 判断人物与敌人是否碰撞
-            // if (impact(this, enemy)) {
-            if (this.x + this.w + 45 > enemy.x && this.x < enemy.x + enemy.w + 45) {
+            // this.x > enemy.x - 15 - this.w // 当玩家在敌人左侧 15 个像素点
+            // enemy.x + enemy.w + 15 > this.x // 当玩家在敌人右侧 15 个像素点
+            if (this.x > enemy.x - this.w - 15&& this.x < enemy.x - this.w + 15) {
+                console.log('123')
                 // 开始攻击, 删除敌人 TODO 这里应该在攻击动画播放结束的时候删除敌人,现在定时器是一种 hack 的方案。不应该这么做
                 setTimeout(() => {
                     // 暂时设置伤害值是 30-50 间的随机数
-                    let damageValue = Math.round(Math.random()*20+30)
+                    let damageValue = Math.round(PLAYER_ATTACK_DAMAGE_VALUE)
                     enemy.killEvent(damageValue)
                 }, 500)
             }

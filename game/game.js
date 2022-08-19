@@ -8,6 +8,8 @@ class Game {
         this.keydowns = {}
         this.canvas = document.querySelector('#id-canvas')
         this.context = this.canvas.getContext('2d')
+        this.canvasWidth = this.canvas.clientWidth
+        this.canvasHeight = this.canvas.clientHeight
         window.addEventListener('keydown', (event) => {
             this.keydowns[event.key] = true
         })

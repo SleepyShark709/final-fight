@@ -2,13 +2,14 @@
 class Character {
     constructor(game) {
         this.game = game
+        this.frames = [] // 要展示的动画
         this.runFrames = [] // 奔跑时的 frame
         this.flipX = false
         this.isJump = false
         this.isMoving = false
         this.isDie = false // 是否死亡
         this.defaultLocation = 'right' // 默认朝向
-        this.cooldown = 10 // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
+        this.cooldown = COOL_DOWN // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
         this.movingDirection = 'left' // 默认前进方向
         this.isAttack = false // 是否在攻击
 
@@ -39,7 +40,12 @@ class Character {
             context.scale(-1, 1)
         }
         context.translate(-w2,  -h2)
-        this.texture && context.drawImage(this.texture, 0, 0, 100, 74)
+        if (this.isPlayer) {
+            // 他妈的，因为玩家和敌人的图片大小不一致，玩家图太几小了，所以要放大
+            this.texture && context.drawImage(this.texture, 0, 0, 100, 74)
+        } else {
+            this.texture && context.drawImage(this.texture, 0, 0)
+        }
         context.restore()
     }
 
