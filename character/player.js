@@ -136,6 +136,9 @@ class Player extends Character {
                 // 当攻击的枚举值超过当前枚举数量时，重置攻击枚举值
                 this.attackType = 1
             }
+            if (this.isMoving === true) {
+                this.attackType = 3 // 当移动时攻击使用第三种攻击方式
+            }
             this.frames = ATTACK_FRAMES_MAP[this.attackType] // 设置奔跑的 frame
             this.frameCount = PLAYER_ATTACK_TYPE_1_OR_2_NUMBER * RENDER_IMAGE_NUMBER
             this.isAttack = true
