@@ -53,16 +53,16 @@ class Character {
         if (this.isDie === false) {
             // 在移动的时候更换动作
             this.isMoving = true
-            if (this.isPlayer) {
-                if (x < 0 && this.movingDirection === 'right') {
-                    // 当前向左移动，且上次移动方向是右
-                    // 那么要将人物向右移动他的宽度
-                    this.x += this.w
-                } else if (x > 0 && this.movingDirection === 'left') {
-                    // 当前向右移动，且上次移动方向是左
-                    this.x -= this.w
-                }
-            }
+            // if (this.isPlayer) {
+            //     if (x < 0 && this.movingDirection === 'right') {
+            //         // 当前向左移动，且上次移动方向是右
+            //         // 那么要将人物向右移动他的宽度
+            //         this.x += this.w
+            //     } else if (x > 0 && this.movingDirection === 'left') {
+            //         // 当前向右移动，且上次移动方向是左
+            //         this.x -= this.w
+            //     }
+            // }
             this.movingDirection = x < 0 ? 'left' : 'right' // 重新设置新的移动方向
             this.x += x // 设置当前人物的 x 轴坐标
             this.flipX = this.defaultLocation === 'right' ? x < 0 : this.defaultLocation === 'left' ? x > 0 : false; // 设置反转

@@ -149,7 +149,7 @@ class Player extends Character {
             // console.log('当玩家在敌人左侧 15 个像素点', this.x > enemy.x - 5 - this.w)
             // console.log('当玩家在敌人右侧 15 个像素点', this.x < enemy.x + enemy.w + 5)
             // 逻辑是敌人和玩家的图片解除到的时候，其实肉眼看是没有接触到的（因为有空白部分），所以要让图片负接触一些，才是肉眼可见的打击到了
-            if (this.x > enemy.x + 10 - this.w && this.x < enemy.x + enemy.w - 10) {
+            if (this.x > enemy.x + 30 - this.w && this.x < enemy.x + enemy.w - 30) {
                 console.log('开始攻击')
                 // 开始攻击, 删除敌人 TODO 这里应该在攻击动画播放结束的时候删除敌人,现在定时器是一种 hack 的方案。不应该这么做
                 setTimeout(() => {
