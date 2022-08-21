@@ -1,8 +1,10 @@
 // 主角角色
 class Player extends Character {
-    constructor(game) {
+    constructor(game, map) {
         super(game);
         this.game = game
+        this.map = map
+        this.tileSize = map.tileSize
         this.frames = [] // 要渲染的 frames 里面是图片
         this.idleFrame = [] // 闲置时的 frame
         this.runFrames = [] // 奔跑时的 frame
@@ -31,7 +33,11 @@ class Player extends Character {
         this.isPlayer = true // 是否是玩家
         // this.vx = 0 // x加速度
         // this.mx = 0 // x摩擦力
+        // 和地图相关的数据
 
+    }
+    static new (...args) {
+        return new this(...args)
     }
     initIdleFrame(game) {
         // 创建闲置时的 frame 数组，里面存放的是图片信息
@@ -77,12 +83,39 @@ class Player extends Character {
             }
         }
     }
-    jump() {
+    jump(keyStatus) {
         // 只有人物在地面的时候才可以跳
-        if (this.y === 385) {
+        // if (this.y === 385) {
+        if (keyStatus === 'down' && this.isJump === false) {
+            console.log('跳跃')
+
             this.isJump = true
             this.frames = this.jumpFrames
             this.vy = -JUMP_HEIGHT
+        }
+
+        // }
+    }
+    updateGravity() {
+        // 拿到角色在地图中的坐标 i j
+        let i = Math.floor(this.x / this.tileSize)
+        let j = Math.floor(this.y / this.tileSize) + 3
+        let onTheGround = this.map.onTheGround(i, j)
+        if (onTheGround && this.vy > 0) {
+            console.log('vy is', this.vy)
+            // 在地图上
+            // this.vy = 0
+            this.isJump = false
+        } else {
+            this.y += this.vy // 设置人物新的高度
+            this.vy += this.gy * GRAVITATIONAL_ACCELERATION_PERCENT // 修改人物 y 轴方向的速度
+            if (this.y > 385){
+                this.y = 385 // 当人物 y 坐标大于地面时，让人物停在地面上
+                if (this.isJump === true) {
+                    this.frames = this.idleFrame
+                    this.isJump = false
+                }
+            }
         }
     }
     update () {
@@ -98,16 +131,8 @@ class Player extends Character {
          *             this.x += this.vx
          *         }
          * */
+        this.updateGravity()
 
-        this.y += this.vy // 设置人物新的高度
-        this.vy += this.gy * GRAVITATIONAL_ACCELERATION_PERCENT // 修改人物 y 轴方向的速度
-        if (this.y > 385){
-            this.y = 385 // 当人物 y 坐标大于地面时，让人物停在地面上
-            if (this.isJump === true) {
-                this.frames = this.idleFrame
-                this.isJump = false
-            }
-        }
         // 当角色x位置超出画面，将其限制在画面内
         this.x = this.x < this.w ? this.w : this.x > this.game.canvasWidth - this.w ? this.game.canvasWidth - this.w * 2 : this.x
         if (this.cooldown > 0) {

@@ -6,11 +6,11 @@ class Scene extends GameScene{
         this.addElement(bg)
         let map = new GameTileMap(game)
         this.addElement(map)
-        let player = new Player(game, this)
+        let player = new Player(game, map)
         player.x = 112
         player.y = 385
         this.player = player
-        this.addElement(player)
+        this.addElement(player, map)
         let enemy = new Enemy(game, this)
         this.enemy = enemy
         enemy.x = 500
@@ -19,6 +19,7 @@ class Scene extends GameScene{
 
         this.setupInputs()
     }
+
     update() {
         super.update();
         if (this.enemy.x + this.enemy.w - this.player.w / 2 < this.player.x || this.enemy.x > this.player.x + this.player.w - this.player.w / 2) {
@@ -44,10 +45,10 @@ class Scene extends GameScene{
             this.player.move(playerSpeed, keyStatus)
         })
         self.game.registerAction('j', (keyStatus) => {
-            this.player.attack(this.enemy, this)
+            this.player.attack(this.enemy, keyStatus)
         })
         self.game.registerAction('k', (keyStatus) => {
-            this.player.jump()
+            this.player.jump(keyStatus)
         })
     }
 }
