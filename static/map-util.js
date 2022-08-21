@@ -12,11 +12,6 @@ class MapImages {
             t9: 'image/map/grass/t9.png',
             t10: 'image/map/grass/t10.png',
             t11: 'image/map/grass/t11.png',
-
-
-
-
-
         }
     }
 }

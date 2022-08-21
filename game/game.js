@@ -10,11 +10,14 @@ class Game {
         this.context = this.canvas.getContext('2d')
         this.canvasWidth = this.canvas.clientWidth
         this.canvasHeight = this.canvas.clientHeight
+        this.keyStatus = 'up'
         window.addEventListener('keydown', (event) => {
             this.keydowns[event.key] = true
+            this.keyStatus = 'down'
         })
         window.addEventListener('keyup', (event) => {
             this.keydowns[event.key] = false
+            this.keyStatus = 'up'
         })
         this.init()
     }
@@ -32,7 +35,7 @@ class Game {
         this.scene.deleteElement(element)
     }
     registerAction = (key, callback) => {
-        this.actions[key] = callback
+        this.actions[key] = () => callback(this.keyStatus)
     }
     runLoop () {
         let g = this

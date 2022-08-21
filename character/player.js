@@ -29,6 +29,8 @@ class Player extends Character {
         this.vy = 0 // y轴的速度
         this.isJump = false // 是否在跳跃
         this.isPlayer = true // 是否是玩家
+        // this.vx = 0 // x加速度
+        // this.mx = 0 // x摩擦力
 
     }
     initIdleFrame(game) {
@@ -84,6 +86,19 @@ class Player extends Character {
         }
     }
     update () {
+        /**
+         * 摩擦力系统，感觉这个游戏不需要
+         *         // 更新 x 加速和受力
+         *         this.vx += this.mx
+         *         // 说明摩擦力已经把速度降至 0 以下，停止摩擦
+         *         if (this.vx * this.mx > 0) {
+         *             this.vx = 0
+         *             this.mx = 0
+         *         } else {
+         *             this.x += this.vx
+         *         }
+         * */
+
         this.y += this.vy // 设置人物新的高度
         this.vy += this.gy * GRAVITATIONAL_ACCELERATION_PERCENT // 修改人物 y 轴方向的速度
         if (this.y > 385){
@@ -159,5 +174,14 @@ class Player extends Character {
                 }, 500)
             }
         }
+    }
+    move(x, keyStatus) {
+        super.move(x);
+        // 摩擦力系统，感觉这个游戏不需要
+        // let speed = 0.3 * x
+        // if (keyStatus === 'down') {
+        //     this.vx += speed
+        //     this.mx = -speed / 1.5
+        // }
     }
 }

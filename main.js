@@ -5,7 +5,6 @@ const __main = () => {
     let input = document.querySelector('#id-input-speed')
     let zhen = document.querySelector('.zhen')
     let fps = FPS
-    console.log(fps, '==')
     input.value = FPS
     input.addEventListener('input', (event) => {
         let input = event.target

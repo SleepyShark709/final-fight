@@ -4,6 +4,8 @@ class Scene extends GameScene{
         // 背景
         let bg = new GameImage(game, 'bg', 0, 0, 1024, 512)
         this.addElement(bg)
+        let map = new GameTileMap(game)
+        this.addElement(map)
         let player = new Player(game, this)
         player.x = 112
         player.y = 385
@@ -14,8 +16,7 @@ class Scene extends GameScene{
         enemy.x = 500
         enemy.y = 364
         this.addElement(enemy)
-        let map = new GameTileMap(game)
-        this.addElement(map)
+
         this.setupInputs()
     }
     update() {
@@ -35,16 +36,17 @@ class Scene extends GameScene{
 
     setupInputs() {
         let self = this
-        self.game.registerAction('a', () => {
-            this.player.move(-5)
+        let playerSpeed = 5
+        self.game.registerAction('a', (keyStatus) => {
+            this.player.move(-playerSpeed, keyStatus)
         })
-        self.game.registerAction('d', () => {
-            this.player.move(5)
+        self.game.registerAction('d', (keyStatus) => {
+            this.player.move(playerSpeed, keyStatus)
         })
-        self.game.registerAction('j', () => {
+        self.game.registerAction('j', (keyStatus) => {
             this.player.attack(this.enemy, this)
         })
-        self.game.registerAction('k', () => {
+        self.game.registerAction('k', (keyStatus) => {
             this.player.jump()
         })
     }
