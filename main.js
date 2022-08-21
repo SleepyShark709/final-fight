@@ -21,9 +21,11 @@ const __main = () => {
     }
     let playerImages = new PlayerImages().images
     let enemyImages = new EnemyImages().images
+    let mapImages = new MapImages().images
 
     images = Object.assign(images, playerImages)
     images = Object.assign(images, enemyImages)
+    images = Object.assign(images, mapImages)
 
     var game = new Game(FPS, images, function(g) {
         // var s = SceneTitle.new(g)

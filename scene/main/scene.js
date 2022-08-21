@@ -14,6 +14,8 @@ class Scene extends GameScene{
         enemy.x = 500
         enemy.y = 364
         this.addElement(enemy)
+        let map = new GameTileMap(game)
+        this.addElement(map)
         this.setupInputs()
     }
     update() {
