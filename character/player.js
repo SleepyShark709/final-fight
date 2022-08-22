@@ -33,7 +33,7 @@ class Player extends Character {
         this.isPlayer = true // 是否是玩家
         this.vx = 0 // x加速度
         this.mx = 0 // x摩擦力
-        this.maxSpeed = 7
+        this.maxSpeed = 2.5
         // 和地图相关的数据
 
     }
@@ -99,7 +99,7 @@ class Player extends Character {
     }
     updateGravity() {
         // 拿到角色在地图中的坐标 i j
-        let i = Math.floor(this.x / this.tileSize) + 1
+        let i = Math.floor(this.x / this.tileSize) + 2
         let j = Math.floor(this.y / this.tileSize) + 2
         // console.log('i j ', i, j)
         let onTheGround = this.map.onTheGround(i, j)
@@ -108,8 +108,15 @@ class Player extends Character {
             // this.vy = 0
             this.isJump = false
         } else {
+            console.log('123')
             this.y += this.vy // 设置人物新的高度
             this.vy += this.gy * GRAVITATIONAL_ACCELERATION_PERCENT // 修改人物 y 轴方向的速度
+            // 如果陷入地面，要拔出来， 重置 y 的位置
+            let j = Math.floor(this.y / this.tileSize) + 2
+            let onTheGround = this.map.onTheGround(i, j)
+            if (onTheGround) {
+                this.y = (j - 2) * this.tileSize
+            }
             if (this.y > 385){
                 this.y = 385 // 当人物 y 坐标大于地面时，让人物停在地面上
                 if (this.isJump === true) {
@@ -122,10 +129,11 @@ class Player extends Character {
     update () {
         // 摩擦力系统
         // 更新 x 加速和受力
-        // if (this.isMoving) {
         this.vx += this.mx
         if (Math.abs(this.vx) >= this.maxSpeed) {
             this.vx = parseInt(this.vx)
+            console.log(this.vx)
+
         }
         // 说明摩擦力已经把速度降至 0 以下，停止摩擦
         if (this.vx * this.mx > 0) {
@@ -134,7 +142,6 @@ class Player extends Character {
         } else {
             this.x += this.vx
         }
-        // }
 
         this.updateGravity()
 

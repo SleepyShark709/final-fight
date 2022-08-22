@@ -12,7 +12,7 @@ class Character {
         this.cooldown = COOL_DOWN // 攻击的冷却时间，不能让用户按住攻击键不松手一直进行攻击
         this.movingDirection = 'left' // 默认前进方向
         this.isAttack = false // 是否在攻击
-
+        this.tileSize = 32
     }
 
     static new (game) {
@@ -42,7 +42,7 @@ class Character {
         context.translate(-w2,  -h2)
         if (this.isPlayer) {
             // 他妈的，因为玩家和敌人的图片大小不一致，玩家图太几小了，所以要放大
-            this.texture && context.drawImage(this.texture, 0, 0, 100, 72)
+            this.texture && context.drawImage(this.texture, 0, 0, 96, 64)
         } else {
             this.texture && context.drawImage(this.texture, 0, 0)
         }
@@ -53,17 +53,8 @@ class Character {
         if (this.isDie === false) {
             // 在移动的时候更换动作
             this.isMoving = true
-            // if (this.isPlayer) {
-            //     if (x < 0 && this.movingDirection === 'right') {
-            //         // 当前向左移动，且上次移动方向是右
-            //         // 那么要将人物向右移动他的宽度
-            //         this.x += this.w
-            //     } else if (x > 0 && this.movingDirection === 'left') {
-            //         // 当前向右移动，且上次移动方向是左
-            //         this.x -= this.w
-            //     }
-            // }
-            this.movingDirection = x < 0 ? 'left' : 'right' // 重新设置新的移动方向
+            // 移动前要判断前方的是否为砖块，如果为砖块，则不允许人物进行移动（x不改变）
+            // 获取玩家当前坐标，并根据前进的方向拿到前后砖块的坐标
             this.x += x // 设置当前人物的 x 轴坐标
             this.flipX = this.defaultLocation === 'right' ? x < 0 : this.defaultLocation === 'left' ? x > 0 : false; // 设置反转
             if (this.isJump === false && this.isAttack === false) {
