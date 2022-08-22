@@ -8,7 +8,7 @@ class Scene extends GameScene{
         this.addElement(map)
         let player = new Player(game, map)
         player.x = 112
-        player.y = 385
+        player.y = 100
         this.player = player
         this.addElement(player, map)
         let enemy = new Enemy(game, this)

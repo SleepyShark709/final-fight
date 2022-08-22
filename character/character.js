@@ -42,7 +42,7 @@ class Character {
         context.translate(-w2,  -h2)
         if (this.isPlayer) {
             // 他妈的，因为玩家和敌人的图片大小不一致，玩家图太几小了，所以要放大
-            this.texture && context.drawImage(this.texture, 0, 0, 100, 74)
+            this.texture && context.drawImage(this.texture, 0, 0, 100, 72)
         } else {
             this.texture && context.drawImage(this.texture, 0, 0)
         }

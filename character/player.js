@@ -31,8 +31,9 @@ class Player extends Character {
         this.vy = 0 // y轴的速度
         this.isJump = false // 是否在跳跃
         this.isPlayer = true // 是否是玩家
-        // this.vx = 0 // x加速度
-        // this.mx = 0 // x摩擦力
+        this.vx = 0 // x加速度
+        this.mx = 0 // x摩擦力
+        this.maxSpeed = 7
         // 和地图相关的数据
 
     }
@@ -98,11 +99,11 @@ class Player extends Character {
     }
     updateGravity() {
         // 拿到角色在地图中的坐标 i j
-        let i = Math.floor(this.x / this.tileSize)
-        let j = Math.floor(this.y / this.tileSize) + 3
+        let i = Math.floor(this.x / this.tileSize) + 1
+        let j = Math.floor(this.y / this.tileSize) + 2
+        // console.log('i j ', i, j)
         let onTheGround = this.map.onTheGround(i, j)
         if (onTheGround && this.vy > 0) {
-            console.log('vy is', this.vy)
             // 在地图上
             // this.vy = 0
             this.isJump = false
@@ -119,22 +120,26 @@ class Player extends Character {
         }
     }
     update () {
-        /**
-         * 摩擦力系统，感觉这个游戏不需要
-         *         // 更新 x 加速和受力
-         *         this.vx += this.mx
-         *         // 说明摩擦力已经把速度降至 0 以下，停止摩擦
-         *         if (this.vx * this.mx > 0) {
-         *             this.vx = 0
-         *             this.mx = 0
-         *         } else {
-         *             this.x += this.vx
-         *         }
-         * */
+        // 摩擦力系统
+        // 更新 x 加速和受力
+        // if (this.isMoving) {
+        this.vx += this.mx
+        if (Math.abs(this.vx) >= this.maxSpeed) {
+            this.vx = parseInt(this.vx)
+        }
+        // 说明摩擦力已经把速度降至 0 以下，停止摩擦
+        if (this.vx * this.mx > 0) {
+            this.vx = 0
+            this.mx = 0
+        } else {
+            this.x += this.vx
+        }
+        // }
+
         this.updateGravity()
 
         // 当角色x位置超出画面，将其限制在画面内
-        this.x = this.x < this.w ? this.w : this.x > this.game.canvasWidth - this.w ? this.game.canvasWidth - this.w * 2 : this.x
+        // this.x = this.x < this.w ? this.w : this.x > this.game.canvasWidth - this.w ? this.game.canvasWidth - this.w * 2 : this.x
         if (this.cooldown > 0) {
             // 设置冷却时间
             this.cooldown--
@@ -203,10 +208,9 @@ class Player extends Character {
     move(x, keyStatus) {
         super.move(x);
         // 摩擦力系统，感觉这个游戏不需要
-        // let speed = 0.3 * x
-        // if (keyStatus === 'down') {
-        //     this.vx += speed
-        //     this.mx = -speed / 1.5
-        // }
+        let speed = 0.3 * x
+        this.vx += speed
+        this.mx = -speed / 2
     }
+
 }
