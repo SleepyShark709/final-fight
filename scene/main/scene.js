@@ -14,7 +14,7 @@ class Scene extends GameScene{
         let enemy = new Enemy(game, this)
         this.enemy = enemy
         enemy.x = 500
-        enemy.y = 364
+        enemy.y = 354
         this.addElement(enemy)
 
         this.setupInputs()
