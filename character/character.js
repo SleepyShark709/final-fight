@@ -13,6 +13,8 @@ class Character {
         this.movingDirection = 'left' // 默认前进方向
         this.isAttack = false // 是否在攻击
         this.tileSize = 32
+        this.map = new GameTileMap(game)
+        this.isBlockOnFrount = false // 前方是否为 tiles
     }
 
     static new (game) {
@@ -55,7 +57,24 @@ class Character {
             this.isMoving = true
             // 移动前要判断前方的是否为砖块，如果为砖块，则不允许人物进行移动（x不改变）
             // 获取玩家当前坐标，并根据前进的方向拿到前后砖块的坐标
-            this.x += x // 设置当前人物的 x 轴坐标
+            // 拿到角色在地图中的坐标 i j
+            let i = 0
+            if (x < 0) {
+                // 向左移动
+                i = Math.floor(this.x / this.tileSize)
+            } else {
+                i = Math.floor(this.x / this.tileSize) + 2
+            }
+            let j = Math.floor(this.y / this.tileSize) + 1
+            let onTheGround = this.map.onTheGround(i, j)
+            if (!onTheGround) {
+                this.x += x //  设置当前人物的 x 轴坐标
+                this.isBlockOnFrount = false
+            } else {
+                this.isBlockOnFrount = true
+            }
+            // console.log('onTheGround', onTheGround)
+
             this.flipX = this.defaultLocation === 'right' ? x < 0 : this.defaultLocation === 'left' ? x > 0 : false; // 设置反转
             if (this.isJump === false && this.isAttack === false) {
                 this.frames = this.runFrames // 设置奔跑的 frame

@@ -132,14 +132,12 @@ class Player extends Character {
         this.vx += this.mx
         if (Math.abs(this.vx) >= this.maxSpeed) {
             this.vx = parseInt(this.vx)
-            console.log(this.vx)
-
         }
         // 说明摩擦力已经把速度降至 0 以下，停止摩擦
         if (this.vx * this.mx > 0) {
             this.vx = 0
             this.mx = 0
-        } else {
+        } else if (this.isBlockOnFrount === false) {
             this.x += this.vx
         }
 
@@ -219,5 +217,4 @@ class Player extends Character {
         this.vx += speed
         this.mx = -speed / 2
     }
-
 }
