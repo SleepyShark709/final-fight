@@ -31,6 +31,8 @@ class Character {
             this.frames = this.idleFrame
         }
         this.isMoving = false
+        this.w = this.texture.width // 图片宽
+        this.h = this.texture.height // 图片高
     }
     draw () {
         let context = this.game.context
@@ -62,8 +64,10 @@ class Character {
             if (x < 0) {
                 // 向左移动
                 i = Math.floor(this.x / this.tileSize)
+                this.movingDirection = 'left'
             } else {
                 i = Math.floor(this.x / this.tileSize) + 2
+                this.movingDirection = 'right'
             }
             let j = Math.floor(this.y / this.tileSize) + 1
             let onTheGround = this.map.onTheGround(i, j)
