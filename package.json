@@ -1,0 +1,23 @@
+{
+  "name": "final-fight",
+  "version": "1.0.0",
+  "description": "+ 向左移动 A\r + 向右移动 D\r + 攻击 J\r + 跳跃 K",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SleepyShark709/final-fight.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SleepyShark709/final-fight/issues"
+  },
+  "homepage": "https://github.com/SleepyShark709/final-fight#readme",
+  "dependencies": {
+    "express": "^4.18.1"
+  }
+}
