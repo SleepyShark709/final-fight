@@ -2,8 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="screen-orientation" content="portrait">
+    <meta name="full-screen" content="yes">
+    <meta name="browsermode" content="application">
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no,minimal-ui">
+    <meta name="format-detection" content="telphone=no, email=no"/>
     <title>Final-Fight</title>
     <style>
+        body {
+            margin: 0;
+        }
         #id-canvas {
             /*border: black 1px solid;*/
         }
@@ -48,6 +59,16 @@
     <script src="main.js"></script>
     <script>
         let canvas = document.querySelector('#id-canvas')
+        let body = document.querySelector('body')
+        if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+            console.log('123')
+            // 当前设备是移动设备
+            window.isMobileTerminal = true
+            canvas.style.width = '100vw'
+            canvas.style.height = '100vh'
+            body.style.overflow = 'hidden'
+        }
+
         canvas.addEventListener('click', () => {
             console.log(`x is (${event.clientX}) y is (${event.clientY})`)
         })

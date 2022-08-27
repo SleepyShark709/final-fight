@@ -3,6 +3,7 @@ const fs = require('fs')
 const path = require('path')
 var app = express();
 app.use(express.static('./'))
+const port = process.env.PORT || 3000
 
 //
 // app.engine('html', require('/public/index.html'))
@@ -11,5 +12,5 @@ app.use(express.static('./'))
 // })
 //
 // // app.use(express.static("public")).listen(8080);
-app.listen(3000, () => {console.log('start')})
+app.listen(port, () => {console.log(`程序已启动，端口号为${port}`)})
 

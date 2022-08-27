@@ -9,5 +9,7 @@ class SceneTitle extends GameScene{
             var s = new Scene(game)
             game.replaceScene(s)
         })
+        if (window.isMobileTerminal === true) {
+        }
     }
 }

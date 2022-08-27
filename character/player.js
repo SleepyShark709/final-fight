@@ -99,7 +99,12 @@ class Player extends Character {
     }
     updateGravity() {
         // 拿到角色在地图中的坐标 i j
-        let i = Math.floor(this.x / this.tileSize) + 2
+        // 角色向左的时候 i + 2，向右的时候 i + 1
+        let coefficient = 1
+        if (this.movingDirection === 'left') {
+            coefficient = 2
+        }
+        let i = Math.floor(this.x / this.tileSize) + coefficient
         let j = Math.floor(this.y / this.tileSize) + 2
         // console.log('i j ', i, j)
         let onTheGround = this.map.onTheGround(i, j)
