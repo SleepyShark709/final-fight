@@ -34,10 +34,15 @@ class Player extends Character {
         this.vx = 0 // x加速度
         this.mx = 0 // x摩擦力
         this.maxSpeed = 2.5
+        // 添加血量相关属性
+        this.maxHP = 100
+        this.currentHP = 100
+        this.isDead = false
+        this.HPBar = new HpBar(game, this.x, this.y + 20)
         // 和地图相关的数据
 
     }
-    static new (...args) {
+    static new(...args) {
         return new this(...args)
     }
     initIdleFrame(game) {
@@ -122,7 +127,7 @@ class Player extends Character {
             if (onTheGround) {
                 this.y = (j - 2) * this.tileSize
             }
-            if (this.y > 385){
+            if (this.y > 385) {
                 this.y = 385 // 当人物 y 坐标大于地面时，让人物停在地面上
                 if (this.isJump === true) {
                     this.frames = this.idleFrame
@@ -131,7 +136,12 @@ class Player extends Character {
             }
         }
     }
-    update () {
+    update() {
+        // 更新血条位置
+        this.HPBar.update(this.currentHP / this.maxHP)
+        this.HPBar.x = this.x + this.w / 4
+        this.HPBar.y = this.y - 20
+
         // 摩擦力系统
         // 更新 x 加速和受力
         this.vx += this.mx
@@ -221,5 +231,35 @@ class Player extends Character {
         let speed = 0.3 * x
         this.vx += speed
         this.mx = -speed / 2
+    }
+    draw() {
+        super.draw()
+        this.HPBar.draw()
+    }
+
+    // 受伤方法
+    takeDamage(damage) {
+        if (!this.isDead) {
+            this.currentHP -= damage
+            if (this.currentHP <= 0) {
+                this.currentHP = 0
+                this.die()
+            }
+        }
+    }
+
+    // 死亡方法
+    die() {
+        this.isDead = true
+        // 移除血条
+        this.HPBar.remove()
+        // 停止所有动画和更新
+        this.frames = []
+        this.texture = null
+        // 停止场景更新
+
+        // 切换到游戏结束场景
+        let s = SceneTitle.new(this.game)
+        this.game.replaceScene(s)
     }
 }

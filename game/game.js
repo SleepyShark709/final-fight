@@ -23,12 +23,13 @@ class Game {
     }
     drawImage(Img, width, height) {
         //Img 是一个 GameImgae
-        this.context.drawImage(Img.texture, Img.x, Img.y, width, height)
+        // LogGroup: default
+        Img.texture && this.context.drawImage(Img.texture, Img.x, Img.y, width, height)
     }
     update() {
         this.scene.update()
     }
-    draw ()  {
+    draw() {
         this.scene.draw()
     }
     deleteImage(element) {
@@ -37,12 +38,12 @@ class Game {
     registerAction = (key, callback) => {
         this.actions[key] = () => callback(this.keyStatus)
     }
-    runLoop () {
+    runLoop() {
         let g = this
         var actions = Object.keys(g.actions)
         for (let i = 0; i < actions.length; i++) {
             var key = actions[i]
-            if (g.keydowns[key]){
+            if (g.keydowns[key]) {
                 g.actions[key]()
             }
         }
@@ -54,25 +55,26 @@ class Game {
         //draw
         g.draw()
         setTimeout(() => {
-            this.runLoop()
+            window.requestAnimationFrame(this.runLoop.bind(this))
+            // this.runLoop()
         }, 1000 / window.fps)
     }
-    textureByName (name) {
+    textureByName(name) {
         let g = this
         var img = g.images[name]
         return img
     }
-    runWithScene (scene) {
+    runWithScene(scene) {
         let g = this
         g.scene = scene
         setTimeout(() => {
             this.runLoop()
         }, 1000 / window.fps)
     }
-    replaceScene (scene) {
+    replaceScene(scene) {
         this.scene = scene
     }
-    __start () {
+    __start() {
         this.runCallback(this)
     }
     init = () => {
@@ -84,7 +86,7 @@ class Game {
             var path = this.images[name]
             let img = new Image()
             img.src = path
-            img.onload = function() {
+            img.onload = function () {
                 //存入g.images中
                 g.images[name] = img
                 // 所有图片都载入成功之后调用run

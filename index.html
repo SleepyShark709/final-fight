@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="screen-orientation" content="portrait">
@@ -8,16 +9,19 @@
     <meta name="x5-orientation" content="portrait">
     <meta name="x5-fullscreen" content="true">
     <meta name="x5-page-mode" content="app">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no,minimal-ui">
-    <meta name="format-detection" content="telphone=no, email=no"/>
+    <meta name="viewport"
+        content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no,minimal-ui">
+    <meta name="format-detection" content="telphone=no, email=no" />
     <title>Final-Fight</title>
     <style>
         body {
             margin: 0;
         }
+
         #id-canvas {
             /*border: black 1px solid;*/
         }
+
         .inline-block {
             display: inline-block;
         }
@@ -50,18 +54,19 @@
     <script src="static/map-util.js"></script>
 
 </head>
+
 <body>
     <canvas id="id-canvas" width="1024" height="512"></canvas>
 
     <hr>
-    <input id="id-input-speed" type="range"><div class="zhen">`帧率（50）`</div>
+    <input id="id-input-speed" type="range">
+    <div class="zhen">`帧率（50）`</div>
     <div class="game-controls"></div>
     <script src="main.js"></script>
     <script>
         let canvas = document.querySelector('#id-canvas')
         let body = document.querySelector('body')
         if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
-            console.log('123')
             // 当前设备是移动设备
             window.isMobileTerminal = true
             canvas.style.width = '100vw'
@@ -74,4 +79,5 @@
         })
     </script>
 </body>
+
 </html>

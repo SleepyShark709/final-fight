@@ -12,5 +12,6 @@ const port = process.env.PORT || 3000
 // })
 //
 // // app.use(express.static("public")).listen(8080);
-app.listen(port, () => {console.log(`程序已启动，端口号为${port}`)})
-
+app.listen(port, () => {
+    console.log(`程序已启动，端口号为${port}, localhost:${port}`)
+})
