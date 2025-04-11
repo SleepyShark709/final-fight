@@ -17,7 +17,7 @@ class Character {
         this.isBlockOnFrount = false // 前方是否为 tiles
     }
 
-    static new (game) {
+    static new(game) {
         return new this(game)
     }
 
@@ -34,7 +34,7 @@ class Character {
         this.w = this.texture.width // 图片宽
         this.h = this.texture.height // 图片高
     }
-    draw () {
+    draw() {
         let context = this.game.context
         context.save()
         let w2 = this.w / 2
@@ -43,7 +43,7 @@ class Character {
         if (this.flipX) {
             context.scale(-1, 1)
         }
-        context.translate(-w2,  -h2)
+        context.translate(-w2, -h2)
         if (this.isPlayer) {
             // 他妈的，因为玩家和敌人的图片大小不一致，玩家图太几小了，所以要放大
             this.texture && context.drawImage(this.texture, 0, 0, 96, 64)
@@ -57,31 +57,24 @@ class Character {
         if (this.isDie === false) {
             // 在移动的时候更换动作
             this.isMoving = true
-            // 移动前要判断前方的是否为砖块，如果为砖块，则不允许人物进行移动（x不改变）
-            // 获取玩家当前坐标，并根据前进的方向拿到前后砖块的坐标
-            // 拿到角色在地图中的坐标 i j
-            let i = 0
+
+            // 只设置移动方向，不进行碰撞检测
             if (x < 0) {
                 // 向左移动
-                i = Math.floor(this.x / this.tileSize)
                 this.movingDirection = 'left'
             } else {
-                i = Math.floor(this.x / this.tileSize) + 2
                 this.movingDirection = 'right'
             }
-            let j = Math.floor(this.y / this.tileSize) + 1
-            let onTheGround = this.map.onTheGround(i, j)
-            if (!onTheGround) {
-                this.x += x //  设置当前人物的 x 轴坐标
-                this.isBlockOnFrount = false
-            } else {
-                this.isBlockOnFrount = true
-            }
-            // console.log('onTheGround', onTheGround)
 
-            this.flipX = this.defaultLocation === 'right' ? x < 0 : this.defaultLocation === 'left' ? x > 0 : false; // 设置反转
+            // 更新坐标位置
+            this.x += x
+
+            // 设置角色朝向
+            this.flipX = this.defaultLocation === 'right' ? x < 0 : this.defaultLocation === 'left' ? x > 0 : false;
+
+            // 如果没在跳跃或攻击状态，则设置为奔跑动画
             if (this.isJump === false && this.isAttack === false) {
-                this.frames = this.runFrames // 设置奔跑的 frame
+                this.frames = this.runFrames
             }
         }
     }

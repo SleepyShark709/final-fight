@@ -30,6 +30,7 @@ class Player extends Character {
         this.gy = GRAVITATIONAL_ACCELERATION // 重力加速度
         this.vy = 0 // y轴的速度
         this.isJump = false // 是否在跳跃
+        this.isOnGround = false // 新增：是否在地面上
         this.isPlayer = true // 是否是玩家
         this.vx = 0 // x加速度
         this.mx = 0 // x摩擦力
@@ -103,39 +104,109 @@ class Player extends Character {
         // }
     }
     updateGravity() {
-        // 拿到角色在地图中的坐标 i j
-        // 角色向左的时候 i + 2，向右的时候 i + 1
-        let coefficient = 1
-        if (this.movingDirection === 'left') {
-            coefficient = 2
-        }
-        let i = Math.floor(this.x / this.tileSize) + coefficient
-        let j = Math.floor(this.y / this.tileSize) + 2
-        // console.log('i j ', i, j)
-        let onTheGround = this.map.onTheGround(i, j)
-        if (onTheGround && this.vy > 0) {
-            // 在地图上
-            // this.vy = 0
-            this.isJump = false
-        } else {
-            console.log('123')
-            this.y += this.vy // 设置人物新的高度
-            this.vy += this.gy * GRAVITATIONAL_ACCELERATION_PERCENT // 修改人物 y 轴方向的速度
-            // 如果陷入地面，要拔出来， 重置 y 的位置
-            let j = Math.floor(this.y / this.tileSize) + 2
-            let onTheGround = this.map.onTheGround(i, j)
-            if (onTheGround) {
-                this.y = (j - 2) * this.tileSize
+        // 使用角色中心点和底部作为地面检测点
+        let footX = Math.floor((this.x + this.w / 2) / this.tileSize)
+        let footY = Math.floor((this.y + this.h) / this.tileSize)
+
+        // 检查脚下是否有地面
+        let onTheGround = this.map.onTheGround(footX, footY)
+
+        // 检测上一帧是否已经在地面上
+        let wasOnGround = this.isOnGround
+        this.isOnGround = onTheGround && this.vy >= 0
+
+        if (this.isOnGround) {
+            // 在地面上时，停止下落并重置状态
+            if (this.vy > 0) { // 只有当正在下落时才调整位置
+                // 将角色精确放置在地形上方，不留间隙
+                this.y = (footY * this.tileSize) - this.h
+                this.vy = 0
             }
-            if (this.y > 385) {
-                this.y = 385 // 当人物 y 坐标大于地面时，让人物停在地面上
-                if (this.isJump === true) {
+
+            // 只有在之前不在地面而现在在地面时才重置跳跃状态
+            if (!wasOnGround) {
+                this.isJump = false
+                // 如果是从跳跃状态落地，改变动画
+                if (this.frames === this.jumpFrames) {
                     this.frames = this.idleFrame
-                    this.isJump = false
+                }
+            }
+        } else {
+            // 不在地面上，应用重力
+            this.y += this.vy
+            this.vy += this.gy * GRAVITATIONAL_ACCELERATION_PERCENT
+
+            // 游戏世界的底部边界检查
+            if (this.y > 385) {
+                this.y = 385
+                this.vy = 0
+                this.isJump = false
+                this.isOnGround = true
+                if (this.frames === this.jumpFrames) {
+                    this.frames = this.idleFrame
                 }
             }
         }
+
+        // 检测头顶碰撞
+        if (this.vy < 0) {
+            // 使用角色顶部中心点检测头顶碰撞
+            let headX = Math.floor((this.x + this.w / 2) / this.tileSize)
+            let headY = Math.floor(this.y / this.tileSize)
+            let headBlock = this.map.onTheGround(headX, headY)
+
+            if (headBlock) {
+                // 如果头顶有障碍物，停止上升
+                this.vy = 0
+                // 稍微下移角色，防止卡在砖块中
+                this.y = (headY + 1) * this.tileSize
+            }
+        }
     }
+
+    // 简化水平碰撞检测
+    checkHorizontalCollision() {
+        // 使用角色中心点的X坐标作为碰撞检测基准
+        const centerX = Math.floor((this.x + this.w / 2) / this.tileSize);
+
+        // 计算左右检测点，向左右各偏移一格
+        const leftCheckX = centerX - 1;
+        const rightCheckX = centerX + 1;
+
+        // 使用角色上中下三个点进行检测，确保全身都考虑到
+        const checkPoints = [
+            Math.floor((this.y + this.h * 0.2) / this.tileSize), // 上部位置
+            Math.floor((this.y + this.h * 0.5) / this.tileSize), // 中部位置
+            Math.floor((this.y + this.h * 0.8) / this.tileSize) // 下部位置（接近脚部）
+        ]
+
+        // 检查左右是否有墙壁（任一高度位置）
+        const leftWall = checkPoints.some(y => {
+            // 使用角色中心左侧点检测
+            return this.map.onTheGround(leftCheckX, y) && this.map.isTileWall(leftCheckX, y);
+        });
+
+        const rightWall = checkPoints.some(y => {
+            // 使用角色中心右侧点检测
+            return this.map.onTheGround(rightCheckX, y) && this.map.isTileWall(rightCheckX, y);
+        });
+
+        // 应用碰撞响应
+        if (rightWall && this.vx > 0) {
+            // 计算新的X位置，使角色中心恰好在右侧检测点左侧
+            this.x = (rightCheckX - 1) * this.tileSize + this.tileSize / 2 - this.w / 2;
+            this.vx = 0;
+            this.mx = 0;
+        }
+
+        if (leftWall && this.vx < 0) {
+            // 计算新的X位置，使角色中心恰好在左侧检测点右侧
+            this.x = (leftCheckX + 1) * this.tileSize + this.tileSize / 2 - this.w / 2;
+            this.vx = 0;
+            this.mx = 0;
+        }
+    }
+
     update() {
         // 更新血条位置
         this.HPBar.update(this.currentHP / this.maxHP)
@@ -152,14 +223,26 @@ class Player extends Character {
         if (this.vx * this.mx > 0) {
             this.vx = 0
             this.mx = 0
-        } else if (this.isBlockOnFrount === false) {
+        } else {
+            // 应用水平速度
             this.x += this.vx
         }
 
+        // 先应用重力和垂直碰撞检测
         this.updateGravity()
 
+        // 然后单独检测水平碰撞，确保垂直和水平碰撞分开处理
+        this.checkHorizontalCollision()
+
         // 当角色x位置超出画面，将其限制在画面内
-        // this.x = this.x < this.w ? this.w : this.x > this.game.canvasWidth - this.w ? this.game.canvasWidth - this.w * 2 : this.x
+        const minX = 0;
+        const maxX = this.game.canvasWidth - this.w;
+        if (this.x < minX) {
+            this.x = minX;
+        } else if (this.x > maxX) {
+            this.x = maxX;
+        }
+
         if (this.cooldown > 0) {
             // 设置冷却时间
             this.cooldown--
@@ -186,7 +269,6 @@ class Player extends Character {
         this.texture = this.frames[this.frameCount]
 
         // 设置当前为非移动状态
-        // TODO 后续进行跳跃功能开发时要修改这里，因为跳跃也要设置状态
         this.isMoving = false
     }
     attack(enemy, scene) {
@@ -226,13 +308,71 @@ class Player extends Character {
         }
     }
     move(x, keyStatus) {
-        super.move(x);
-        // 摩擦力系统，感觉这个游戏不需要
-        let speed = 0.3 * x
-        this.vx += speed
-        this.mx = -speed / 2
+        // 简化移动碰撞检测
+        let canMove = true
+
+        if (x < 0) {
+            // 向左移动，检查左侧碰撞
+            const centerX = Math.floor((this.x + this.w / 2) / this.tileSize);
+            const leftCheckX = centerX - 1; // 以角色中心左侧一格为检测点
+
+            // 检查角色上中下三个位置
+            const checkPoints = [
+                Math.floor((this.y + this.h * 0.2) / this.tileSize),
+                Math.floor((this.y + this.h * 0.5) / this.tileSize),
+                Math.floor((this.y + this.h * 0.8) / this.tileSize)
+            ]
+
+            // 任一位置有墙壁都不能移动
+            canMove = !checkPoints.some(y => {
+                // 使用修改后的墙壁检测逻辑
+                const hasTile = this.map.onTheGround(leftCheckX, y);
+                const isWall = hasTile && this.map.isTileWall(leftCheckX, y);
+                return isWall;
+            })
+
+            this.movingDirection = 'left'
+        } else {
+            // 向右移动，检查右侧碰撞
+            const centerX = Math.floor((this.x + this.w / 2) / this.tileSize);
+            const rightCheckX = centerX + 1; // 以角色中心右侧一格为检测点
+
+            // 检查角色上中下三个位置
+            const checkPoints = [
+                Math.floor((this.y + this.h * 0.2) / this.tileSize),
+                Math.floor((this.y + this.h * 0.5) / this.tileSize),
+                Math.floor((this.y + this.h * 0.8) / this.tileSize)
+            ]
+
+            // 任一位置有墙壁都不能移动
+            canMove = !checkPoints.some(y => {
+                // 使用修改后的墙壁检测逻辑
+                const hasTile = this.map.onTheGround(rightCheckX, y);
+                const isWall = hasTile && this.map.isTileWall(rightCheckX, y);
+                return isWall;
+            })
+
+            this.movingDirection = 'right'
+        }
+
+        if (canMove) {
+            super.move(x);
+            // 摩擦力系统
+            let speed = 0.3 * x
+            this.vx += speed
+            this.mx = -speed / 2
+        } else {
+            // 虽然不能移动，但仍然设置方向以便正确显示角色朝向
+            this.flipX = this.defaultLocation === 'right' ? x < 0 : this.defaultLocation === 'left' ? x > 0 : false;
+            if (this.isJump === false && this.isAttack === false) {
+                this.frames = this.runFrames // 即使被阻挡，也设置奔跑动画
+            }
+            this.isMoving = true
+            this.isBlockOnFrount = true
+        }
     }
     draw() {
+        // 调用原始绘制方法
         super.draw()
         this.HPBar.draw()
     }
