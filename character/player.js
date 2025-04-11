@@ -42,6 +42,8 @@ class Player extends Character {
         this.HPBar = new HpBar(game, this.x, this.y + 20)
         // 和地图相关的数据
 
+        // 新增：脚部位置偏移量，用于调整角色在地面上的视觉效果
+        this.footOffset = 5 // 可以根据实际情况调整这个值
     }
     static new(...args) {
         return new this(...args)
@@ -119,7 +121,8 @@ class Player extends Character {
             // 在地面上时，停止下落并重置状态
             if (this.vy > 0) { // 只有当正在下落时才调整位置
                 // 将角色精确放置在地形上方，不留间隙
-                this.y = (footY * this.tileSize) - this.h
+                // 使用footOffset调整角色位置，让角色视觉上正好站在地面上
+                this.y = (footY * this.tileSize) - this.h + this.footOffset
                 this.vy = 0
             }
 
@@ -138,7 +141,8 @@ class Player extends Character {
 
             // 游戏世界的底部边界检查
             if (this.y > 385) {
-                this.y = 385
+                // 应用相同的偏移量保持一致性
+                this.y = 385 + this.footOffset
                 this.vy = 0
                 this.isJump = false
                 this.isOnGround = true
