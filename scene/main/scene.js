@@ -89,34 +89,61 @@ class Scene extends GameScene {
         const enemyX = this.enemy.x;
         const enemyY = this.enemy.y;
 
-        // 检查x轴和y轴的碰撞情况 - 基于世界坐标
-        const xCollision = !(enemyX + this.enemy.w - this.player.w / 2 < playerX ||
-            enemyX > playerX + this.player.w - this.player.w / 2);
+        // 如果敌人已经死亡，则跳过碰撞检测
+        if (this.enemy.isDead || this.enemy.isDie) {
+            return;
+        }
 
-        // y轴碰撞检测逻辑改进
+        // 检查x轴碰撞情况 - 基于世界坐标
+        // 更精确的碰撞盒判断，考虑角色实际大小的60%作为碰撞区域
+        const playerHitboxWidth = this.player.w * 0.6;
+        const enemyHitboxWidth = this.enemy.w * 0.6;
+
+        // 计算玩家和敌人的碰撞盒中心点
+        const playerCenterX = playerX + this.player.w / 2;
+        const enemyCenterX = enemyX + this.enemy.w / 2;
+
+        // 计算两个碰撞盒之间的X轴距离
+        const xDistance = Math.abs(playerCenterX - enemyCenterX);
+        // X轴碰撞条件：两个碰撞盒中心点的距离小于两个碰撞盒宽度之和的一半
+        const xCollision = xDistance < (playerHitboxWidth + enemyHitboxWidth) / 2;
+
+        // Y轴碰撞检测逻辑改进
         // 1. 定义y轴接近阈值 - 敌人会在这个范围内追踪玩家
-        const yProximityThreshold = 150;
+        const yProximityThreshold = 120;
         // 2. 定义y轴攻击阈值 - 只有在这个范围内才会实际攻击
-        const yAttackThreshold = 40;
+        const yAttackThreshold = 30;
 
-        // 检查y轴距离
-        const yDistance = Math.abs(playerY - enemyY);
-        const yProximity = yDistance < yProximityThreshold;
-        const yAttackRange = yDistance < yAttackThreshold;
+        // 更精确的Y轴碰撞判断 - 计算玩家和敌人的脚部位置
+        const playerFeet = playerY + this.player.h;
+        const enemyFeet = enemyY + this.enemy.h;
 
-        // 敌人和玩家的碰撞检测
+        // 检查Y轴距离 - 使用脚部位置来判断是否在同一平面
+        // 两个角色在同一水平面上，脚部高度差应该很小
+        const yFootDistance = Math.abs(playerFeet - enemyFeet);
+        // 使用更小的阈值判断是否在同一平面
+        const onSamePlatform = yFootDistance < 15; // 15像素的容差
+
+        // 角色中心点Y轴距离
+        const yCenterDistance = Math.abs(playerY + this.player.h / 2 - (enemyY + this.enemy.h / 2));
+        const yProximity = yCenterDistance < yProximityThreshold;
+        const yAttackRange = yCenterDistance < yAttackThreshold && onSamePlatform;
+
+        // 敌人和玩家的碰撞检测 - 必须在同一平面上
         const canAttack = xCollision && yAttackRange;
 
         // 敌人的移动和攻击逻辑
         if (!canAttack) {
             // 如果不能攻击，则尝试接近玩家
             if (yProximity) {
-                // 如果垂直距离很近，敌人会追踪玩家的x位置
-                // 注意：这里要使用世界坐标，而不是屏幕坐标
-                if (enemyX > playerX) {
-                    this.enemy.move(-3)
-                } else {
-                    this.enemy.move(3)
+                // 只有当敌人和玩家在同一水平面附近时才追踪玩家
+                if (onSamePlatform || yFootDistance < 40) {
+                    // 如果垂直距离很近，敌人会追踪玩家的x位置
+                    if (enemyX > playerX) {
+                        this.enemy.move(-3)
+                    } else {
+                        this.enemy.move(3)
+                    }
                 }
             } else {
                 // 如果玩家在敌人非常远的上方或下方，敌人会保持站立不动
@@ -130,9 +157,10 @@ class Scene extends GameScene {
             // 检查玩家是否被敌人攻击，并且伤害冷却时间已过
             if (this.damageCooldown === 0) {
                 if (this.enemy.isAttack) {
-                    this.player.takeDamage(10) // 被攻击时扣除10点血量
+                    // 被攻击时扣除血量 - 只有当敌人在攻击状态且在同一平面时才造成伤害
+                    this.player.takeDamage(10)
                 } else {
-                    // 如果只是接触但没有被攻击，扣除5点血量
+                    // 如果只是接触但没有被攻击，扣除较少血量
                     this.player.takeDamage(5)
                 }
                 // 设置伤害冷却时间
@@ -220,8 +248,14 @@ class Scene extends GameScene {
             // 绘制玩家碰撞
             this.debugModule.drawPlayerCollision(this.player)
 
+            // 绘制敌人碰撞
+            this.debugModule.drawEnemyCollision(this.enemy)
+
             // 绘制摄像机调试信息
             this.debugModule.drawCameraDebug(this.map)
+
+            // 绘制地形说明
+            this.debugModule.drawTerrainLegend()
         }
     }
 }

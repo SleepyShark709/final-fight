@@ -79,115 +79,85 @@ class DebugModule {
         });
     }
 
-    // 绘制玩家的碰撞可视化
+    // 绘制玩家碰撞盒
     drawPlayerCollision(player) {
-        if (!this.enabled) return;
+        if (!this.enabled || !player) return;
 
         const context = this.game.context;
-
-        // 保存当前画布状态
         context.save();
 
-        // 考虑地图偏移
-        const playerScreenPos = player.map && player.map.worldToScreen ?
-            player.map.worldToScreen(player.x, player.y) : {
-                x: player.x,
-                y: player.y
-            };
+        // 计算玩家屏幕位置
+        let screenX = player.x;
+        if (player.map && player.map.offsetX !== undefined) {
+            screenX += player.map.offsetX;
+        }
 
-        // 设置半透明边界框，这是实际用于碰撞的边界
-        context.fillStyle = 'rgba(0, 255, 0, 0.3)'; // 绿色半透明
-        context.fillRect(playerScreenPos.x, playerScreenPos.y, player.w, player.h);
+        // 绘制玩家外框
+        context.strokeStyle = 'blue';
+        context.lineWidth = 2;
+        context.strokeRect(screenX, player.y, player.w, player.h);
 
-        // 获取碰撞检测点对应的tile坐标
+        // 绘制精确碰撞盒 - 玩家实际碰撞区域（60%宽度）
+        const hitboxWidth = player.w * 0.6;
+        const hitboxX = screenX + (player.w - hitboxWidth) / 2;
+        context.strokeStyle = 'cyan';
+        context.lineWidth = 1;
+        context.strokeRect(hitboxX, player.y, hitboxWidth, player.h);
+
+        // 绘制脚部位置辅助线
+        context.strokeStyle = 'green';
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(screenX, player.y + player.h);
+        context.lineTo(screenX + player.w, player.y + player.h);
+        context.stroke();
+
+        // 显示玩家坐标
+        context.fillStyle = 'white';
+        context.font = '12px Arial';
+        context.fillText(`(${Math.round(player.x)},${Math.round(player.y)})`, screenX, player.y - 5);
+
+        // 恢复玩家状态信息面板
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        context.fillRect(10, 10, 300, 140);
+
+        // 获取碰撞状态信息
         const footX = Math.floor((player.x + player.w / 2) / player.tileSize);
         const footY = Math.floor((player.y + player.h) / player.tileSize);
         const headX = Math.floor((player.x + player.w / 2) / player.tileSize);
         const headY = Math.floor(player.y / player.tileSize);
-        const leftX = Math.floor(player.x / player.tileSize);
-        const rightX = Math.floor((player.x + player.w) / player.tileSize);
 
-        // 获取三个高度位置进行水平碰撞检测
-        const topY = Math.floor((player.y + player.h * 0.2) / player.tileSize);
-        const middleY = Math.floor((player.y + player.h * 0.5) / player.tileSize);
-        const bottomY = Math.floor((player.y + player.h * 0.8) / player.tileSize);
-
-        // 左右墙壁检测点 - 改为使用角色中心左右侧的点
+        // 检查左右墙壁碰撞
         const centerX = footX; // 使用脚部X坐标作为中心点
         const leftWallX = centerX - 1;
         const rightWallX = centerX + 1;
 
-        // 转换为屏幕坐标（应用地图偏移）
-        const tileToScreen = (tileX, tileY) => {
-            const worldX = tileX * player.tileSize;
-            const worldY = tileY * player.tileSize;
-
-            if (player.map && player.map.worldToScreen) {
-                return player.map.worldToScreen(worldX, worldY);
-            }
-
-            return {
-                x: worldX,
-                y: worldY
-            };
-        };
-
-        // 绘制碰撞检测点
-        // 脚部检测点 - 红色
-        context.fillStyle = 'rgba(255, 0, 0, 0.5)';
-        const footScreenPos = tileToScreen(footX, footY);
-        context.fillRect(footScreenPos.x, footScreenPos.y, player.tileSize, player.tileSize);
-
-        // 头部检测点 - 青色
-        context.fillStyle = 'rgba(0, 255, 255, 0.5)';
-        const headScreenPos = tileToScreen(headX, headY);
-        context.fillRect(headScreenPos.x, headScreenPos.y, player.tileSize, player.tileSize);
-
-        // 左侧检测点 - 蓝色（上中下三个点）
-        context.fillStyle = 'rgba(0, 0, 255, 0.5)';
-        const leftTopScreenPos = tileToScreen(leftWallX, topY);
-        const leftMiddleScreenPos = tileToScreen(leftWallX, middleY);
-        const leftBottomScreenPos = tileToScreen(leftWallX, bottomY);
-        context.fillRect(leftTopScreenPos.x, leftTopScreenPos.y, player.tileSize, player.tileSize);
-        context.fillRect(leftMiddleScreenPos.x, leftMiddleScreenPos.y, player.tileSize, player.tileSize);
-        context.fillRect(leftBottomScreenPos.x, leftBottomScreenPos.y, player.tileSize, player.tileSize);
-
-        // 右侧检测点 - 黄色（上中下三个点）
-        context.fillStyle = 'rgba(255, 255, 0, 0.5)';
-        const rightTopScreenPos = tileToScreen(rightWallX, topY);
-        const rightMiddleScreenPos = tileToScreen(rightWallX, middleY);
-        const rightBottomScreenPos = tileToScreen(rightWallX, bottomY);
-        context.fillRect(rightTopScreenPos.x, rightTopScreenPos.y, player.tileSize, player.tileSize);
-        context.fillRect(rightMiddleScreenPos.x, rightMiddleScreenPos.y, player.tileSize, player.tileSize);
-        context.fillRect(rightBottomScreenPos.x, rightBottomScreenPos.y, player.tileSize, player.tileSize);
-
         // 检查碰撞状态
-        const onGround = player.map.onTheGround(footX, footY);
-        const headCollision = player.map.onTheGround(headX, headY);
+        const onGround = player.map && player.map.onTheGround ?
+            player.map.onTheGround(footX, footY) : false;
+        const headCollision = player.map && player.map.onTheGround ?
+            player.map.onTheGround(headX, headY) : false;
 
-        // 检查左右墙壁碰撞（任一高度位置）
+        // 检查三个高度位置进行水平碰撞检测
+        const topY = Math.floor((player.y + player.h * 0.2) / player.tileSize);
+        const middleY = Math.floor((player.y + player.h * 0.5) / player.tileSize);
+        const bottomY = Math.floor((player.y + player.h * 0.8) / player.tileSize);
+
         const checkPoints = [topY, middleY, bottomY];
-        const leftWall = checkPoints.some(y =>
-            player.map.onTheGround(leftWallX, y) && player.map.isTileWall(leftWallX, y)
-        );
-        const rightWall = checkPoints.some(y =>
-            player.map.onTheGround(rightWallX, y) && player.map.isTileWall(rightWallX, y)
-        );
+        const leftWall = player.map && player.map.isTileWall ?
+            checkPoints.some(y => player.map.onTheGround(leftWallX, y) && player.map.isTileWall(leftWallX, y)) : false;
+        const rightWall = player.map && player.map.isTileWall ?
+            checkPoints.some(y => player.map.onTheGround(rightWallX, y) && player.map.isTileWall(rightWallX, y)) : false;
 
-        // 绘制信息面板背景
-        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        context.fillRect(10, 10, 300, 140);
-
-        // 显示碰撞状态信息 - 放到画布左上角并增大字体
         context.fillStyle = 'white';
         context.font = '16px Arial';
         context.textBaseline = 'top';
 
         // 在canvas左上角显示调试信息
         const debugInfo = [
-            `调试信息：`,
+            `玩家信息：`,
             `位置: (${Math.floor(player.x)}, ${Math.floor(player.y)})`,
-            `速度: vx=${player.vx.toFixed(1)}, vy=${player.vy.toFixed(1)}`,
+            `速度: vx=${player.vx ? player.vx.toFixed(1) : '0'}, vy=${player.vy ? player.vy.toFixed(1) : '0'}`,
             `地面: ${onGround ? '是' : '否'}, 头部: ${headCollision ? '是' : '否'}`,
             `左墙: ${leftWall ? '是' : '否'}, 右墙: ${rightWall ? '是' : '否'}`,
             `跳跃: ${player.isJump ? '是' : '否'}, 地面状态: ${player.isOnGround ? '是' : '否'}`
@@ -199,7 +169,59 @@ class DebugModule {
             textY += 20; // 增加行间距
         }
 
-        // 恢复画布状态
+        context.restore();
+    }
+
+    // 绘制敌人碰撞盒
+    drawEnemyCollision(enemy) {
+        if (!this.enabled || !enemy) return;
+
+        const context = this.game.context;
+        context.save();
+
+        // 计算敌人屏幕位置
+        let screenX = enemy.x;
+        if (enemy.map && enemy.map.offsetX !== undefined) {
+            screenX += enemy.map.offsetX;
+        }
+
+        // 根据敌人状态选择颜色
+        let color = 'red';
+        if (enemy.isDead || enemy.isDie) {
+            color = 'gray'; // 死亡状态显示灰色
+        }
+
+        // 绘制敌人外框
+        context.strokeStyle = color;
+        context.lineWidth = 2;
+        context.strokeRect(screenX, enemy.y, enemy.w, enemy.h);
+
+        // 只有当敌人活着时才绘制详细碰撞盒
+        if (!enemy.isDead && !enemy.isDie) {
+            // 绘制精确碰撞盒 - 敌人实际碰撞区域（60%宽度）
+            const hitboxWidth = enemy.w * 0.6;
+            const hitboxX = screenX + (enemy.w - hitboxWidth) / 2;
+            context.strokeStyle = 'orange';
+            context.lineWidth = 1;
+            context.strokeRect(hitboxX, enemy.y, hitboxWidth, enemy.h);
+
+            // 绘制脚部位置辅助线
+            context.strokeStyle = 'yellow';
+            context.lineWidth = 1;
+            context.beginPath();
+            context.moveTo(screenX, enemy.y + enemy.h);
+            context.lineTo(screenX + enemy.w, enemy.y + enemy.h);
+            context.stroke();
+        }
+
+        // 显示敌人坐标和状态
+        context.fillStyle = 'white';
+        context.font = '12px Arial';
+        context.fillText(`(${Math.round(enemy.x)},${Math.round(enemy.y)})`, screenX, enemy.y - 5);
+        if (enemy.isDead || enemy.isDie) {
+            context.fillText('已死亡', screenX, enemy.y - 20);
+        }
+
         context.restore();
     }
 
@@ -290,9 +312,9 @@ class DebugModule {
             textY += 20;
         }
 
-        // 绘制控制提示
+        // 绘制控制提示 - 移动到更合适的位置，确保完全显示
         context.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        context.fillRect(10, 420, 300, 120);
+        context.fillRect(this.game.canvasWidth - 310, 10, 300, 140);
         context.fillStyle = 'yellow';
 
         const controlsInfo = [
@@ -301,14 +323,47 @@ class DebugModule {
             'K - 跳跃',
             'J - 攻击',
             'Z/X - 手动滚动地图',
-            'R - 重置位置'
+            'R - 重置位置',
+            'P - 切换调试显示'
         ];
 
-        textY = 430;
+        textY = 20;
         for (const line of controlsInfo) {
-            context.fillText(line, 20, textY);
+            context.fillText(line, this.game.canvasWidth - 290, textY);
             textY += 20;
         }
+
+        context.restore();
+    }
+
+    // 添加解释地形颜色的方法
+    drawTerrainLegend() {
+        if (!this.enabled) return;
+
+        const context = this.game.context;
+        context.save();
+
+        // 绘制说明面板背景
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        context.fillRect(this.game.canvasWidth - 210, 160, 200, 80);
+
+        // 标题
+        context.fillStyle = 'white';
+        context.font = '16px Arial';
+        context.textBaseline = 'top';
+        context.fillText('地形说明:', this.game.canvasWidth - 190, 170);
+
+        // 墙壁示例
+        context.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        context.fillRect(this.game.canvasWidth - 190, 200, 20, 20);
+        context.fillStyle = 'white';
+        context.fillText('墙壁 (阻挡移动)', this.game.canvasWidth - 160, 200);
+
+        // 地面示例
+        context.fillStyle = 'rgba(0, 0, 255, 0.5)';
+        context.fillRect(this.game.canvasWidth - 190, 230, 20, 20);
+        context.fillStyle = 'white';
+        context.fillText('地面 (可站立)', this.game.canvasWidth - 160, 230);
 
         context.restore();
     }
