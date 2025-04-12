@@ -11,6 +11,7 @@ class Game {
         this.canvasWidth = this.canvas.clientWidth
         this.canvasHeight = this.canvas.clientHeight
         this.keyStatus = 'up'
+        this.frameCount = 0
         window.addEventListener('keydown', (event) => {
             this.keydowns[event.key] = true
             this.keyStatus = 'down'
@@ -47,16 +48,14 @@ class Game {
                 g.actions[key]()
             }
         }
-        //update
-        // g.update() && g.update()
+
+        this.frameCount++
+
         g.update()
-        //clear
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
-        //draw
         g.draw()
         setTimeout(() => {
             window.requestAnimationFrame(this.runLoop.bind(this))
-            // this.runLoop()
         }, 1000 / window.fps)
     }
     textureByName(name) {

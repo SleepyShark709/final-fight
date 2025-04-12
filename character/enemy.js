@@ -20,6 +20,8 @@ class Enemy extends Character {
         this.y = 364
         this.HPBar = new HpBar(game, this.x, this.y + 20)
         this.AttackBar = new AttackValue(game, this.x, this.y)
+        this.HPBar.setCharacter(this)
+        this.AttackBar.setCharacter(this)
         this.damageValue = 0 // 受到的攻击伤害
         this.defaultLocation = 'right' // 默认朝向
         this.cooldown = ENEMY_COOL_DOWN
@@ -69,7 +71,7 @@ class Enemy extends Character {
             this.cooldown--
         }
         this.HPBar.update(this.HP / this.defaultHp)
-        this.HPBar.x = this.movingDirection === this.defaultLocation ? this.x + this.w / 4 :this.x + this.w / 2 - 5 // 未翻身的情况下
+        this.HPBar.x = this.movingDirection === this.defaultLocation ? this.x + this.w / 4 : this.x + this.w / 2 - 5 // 未翻身的情况下
         this.AttackBar.update(Number(this.damageValue))
         this.AttackBar.x = this.x + this.w / 2 + 6
         // 判断用户没有移动时，置为闲置状态
@@ -93,7 +95,7 @@ class Enemy extends Character {
         }
         this.texture = this.frames[this.frameCount]
     }
-    draw () {
+    draw() {
         super.draw()
         this.HPBar.draw()
         this.AttackBar.draw()
@@ -115,7 +117,7 @@ class Enemy extends Character {
         }
 
     }
-    attackEvent(){
+    attackEvent() {
         if (this.cooldown === 0 && this.isDie === false) {
             console.log('enemy attack')
             this.cooldown = ENEMY_COOL_DOWN // 设置冷却为10帧

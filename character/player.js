@@ -40,6 +40,8 @@ class Player extends Character {
         this.currentHP = 100
         this.isDead = false
         this.HPBar = new HpBar(game, this.x, this.y + 20)
+        // 关联血条与角色，便于应用地图偏移
+        this.HPBar.setCharacter(this)
         // 和地图相关的数据
 
         // 新增：脚部位置偏移量，用于调整角色在地面上的视觉效果
@@ -238,13 +240,10 @@ class Player extends Character {
         // 然后单独检测水平碰撞，确保垂直和水平碰撞分开处理
         this.checkHorizontalCollision()
 
-        // 当角色x位置超出画面，将其限制在画面内
-        const minX = 0;
-        const maxX = this.game.canvasWidth - this.w;
-        if (this.x < minX) {
-            this.x = minX;
-        } else if (this.x > maxX) {
-            this.x = maxX;
+        // 当角色x位置超出地图，将其限制在地图范围内
+        // 只检查左边界，不再限制右边界，允许玩家无限向右移动
+        if (this.x < 0) {
+            this.x = 0;
         }
 
         if (this.cooldown > 0) {
@@ -313,7 +312,7 @@ class Player extends Character {
     }
     move(x, keyStatus) {
         // 简化移动碰撞检测
-        let canMove = true
+        let canMove = true;
 
         if (x < 0) {
             // 向左移动，检查左侧碰撞
@@ -374,6 +373,9 @@ class Player extends Character {
             this.isMoving = true
             this.isBlockOnFrount = true
         }
+
+        // 返回是否成功移动
+        return canMove;
     }
     draw() {
         // 调用原始绘制方法

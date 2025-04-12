@@ -39,7 +39,17 @@ class Character {
         context.save()
         let w2 = this.w / 2
         let h2 = this.h / 2
-        context.translate(this.x + w2, this.y + h2)
+
+        // 获取角色的屏幕坐标（考虑地图偏移）
+        let screenX = this.x
+        let screenY = this.y
+
+        // 如果角色有地图引用且地图有偏移功能，应用地图偏移
+        if (this.map && this.map.offsetX !== undefined) {
+            screenX = this.x + this.map.offsetX
+        }
+
+        context.translate(screenX + w2, screenY + h2)
         if (this.flipX) {
             context.scale(-1, 1)
         }

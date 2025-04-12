@@ -88,9 +88,16 @@ class DebugModule {
         // 保存当前画布状态
         context.save();
 
+        // 考虑地图偏移
+        const playerScreenPos = player.map && player.map.worldToScreen ?
+            player.map.worldToScreen(player.x, player.y) : {
+                x: player.x,
+                y: player.y
+            };
+
         // 设置半透明边界框，这是实际用于碰撞的边界
         context.fillStyle = 'rgba(0, 255, 0, 0.3)'; // 绿色半透明
-        context.fillRect(player.x, player.y, player.w, player.h);
+        context.fillRect(playerScreenPos.x, playerScreenPos.y, player.w, player.h);
 
         // 获取碰撞检测点对应的tile坐标
         const footX = Math.floor((player.x + player.w / 2) / player.tileSize);
@@ -105,31 +112,54 @@ class DebugModule {
         const middleY = Math.floor((player.y + player.h * 0.5) / player.tileSize);
         const bottomY = Math.floor((player.y + player.h * 0.8) / player.tileSize);
 
-        // 绘制碰撞检测点
-        // 脚部检测点 - 红色
-        context.fillStyle = 'rgba(255, 0, 0, 0.5)';
-        context.fillRect(footX * player.tileSize, footY * player.tileSize, player.tileSize, player.tileSize);
-
-        // 头部检测点 - 青色
-        context.fillStyle = 'rgba(0, 255, 255, 0.5)';
-        context.fillRect(headX * player.tileSize, headY * player.tileSize, player.tileSize, player.tileSize);
-
         // 左右墙壁检测点 - 改为使用角色中心左右侧的点
         const centerX = footX; // 使用脚部X坐标作为中心点
         const leftWallX = centerX - 1;
         const rightWallX = centerX + 1;
 
+        // 转换为屏幕坐标（应用地图偏移）
+        const tileToScreen = (tileX, tileY) => {
+            const worldX = tileX * player.tileSize;
+            const worldY = tileY * player.tileSize;
+
+            if (player.map && player.map.worldToScreen) {
+                return player.map.worldToScreen(worldX, worldY);
+            }
+
+            return {
+                x: worldX,
+                y: worldY
+            };
+        };
+
+        // 绘制碰撞检测点
+        // 脚部检测点 - 红色
+        context.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        const footScreenPos = tileToScreen(footX, footY);
+        context.fillRect(footScreenPos.x, footScreenPos.y, player.tileSize, player.tileSize);
+
+        // 头部检测点 - 青色
+        context.fillStyle = 'rgba(0, 255, 255, 0.5)';
+        const headScreenPos = tileToScreen(headX, headY);
+        context.fillRect(headScreenPos.x, headScreenPos.y, player.tileSize, player.tileSize);
+
         // 左侧检测点 - 蓝色（上中下三个点）
         context.fillStyle = 'rgba(0, 0, 255, 0.5)';
-        context.fillRect(leftWallX * player.tileSize, topY * player.tileSize, player.tileSize, player.tileSize);
-        context.fillRect(leftWallX * player.tileSize, middleY * player.tileSize, player.tileSize, player.tileSize);
-        context.fillRect(leftWallX * player.tileSize, bottomY * player.tileSize, player.tileSize, player.tileSize);
+        const leftTopScreenPos = tileToScreen(leftWallX, topY);
+        const leftMiddleScreenPos = tileToScreen(leftWallX, middleY);
+        const leftBottomScreenPos = tileToScreen(leftWallX, bottomY);
+        context.fillRect(leftTopScreenPos.x, leftTopScreenPos.y, player.tileSize, player.tileSize);
+        context.fillRect(leftMiddleScreenPos.x, leftMiddleScreenPos.y, player.tileSize, player.tileSize);
+        context.fillRect(leftBottomScreenPos.x, leftBottomScreenPos.y, player.tileSize, player.tileSize);
 
         // 右侧检测点 - 黄色（上中下三个点）
         context.fillStyle = 'rgba(255, 255, 0, 0.5)';
-        context.fillRect(rightWallX * player.tileSize, topY * player.tileSize, player.tileSize, player.tileSize);
-        context.fillRect(rightWallX * player.tileSize, middleY * player.tileSize, player.tileSize, player.tileSize);
-        context.fillRect(rightWallX * player.tileSize, bottomY * player.tileSize, player.tileSize, player.tileSize);
+        const rightTopScreenPos = tileToScreen(rightWallX, topY);
+        const rightMiddleScreenPos = tileToScreen(rightWallX, middleY);
+        const rightBottomScreenPos = tileToScreen(rightWallX, bottomY);
+        context.fillRect(rightTopScreenPos.x, rightTopScreenPos.y, player.tileSize, player.tileSize);
+        context.fillRect(rightMiddleScreenPos.x, rightMiddleScreenPos.y, player.tileSize, player.tileSize);
+        context.fillRect(rightBottomScreenPos.x, rightBottomScreenPos.y, player.tileSize, player.tileSize);
 
         // 检查碰撞状态
         const onGround = player.map.onTheGround(footX, footY);
@@ -178,33 +208,108 @@ class DebugModule {
         if (!this.enabled || !map) return;
 
         const context = this.game.context;
+        const tileSize = map.tileSize;
 
-        // 遍历所有可见瓦片
-        for (let i = 0; i < map.tiles.length; i++) {
-            const index = map.tiles[i];
-            if (index !== 0) {
-                const x = Math.floor(i / map.th) * map.tileSize;
-                const y = (i % map.th) * map.tileSize;
+        // 计算要渲染的起始列和结束列（基于当前视口）
+        const startCol = Math.floor(-map.offsetX / tileSize);
+        const endCol = Math.ceil((map.cameraWidth - map.offsetX) / tileSize);
 
-                // 获取瓦片坐标
-                const tileI = Math.floor(i / map.th);
-                const tileJ = i % map.th;
+        // 确保范围不超出地图边界
+        const safeStartCol = Math.max(0, startCol);
+        const safeEndCol = Math.min(map.tw, endCol);
 
-                // 判断是墙壁还是地面
-                const isWall = map.isTileWall(tileI, tileJ);
+        // 对每一列进行循环
+        for (let col = safeStartCol; col < safeEndCol; col++) {
+            // 对每列内的每一行进行循环
+            for (let row = 0; row < map.th; row++) {
+                const tileIndex = col * map.th + row;
+                const tileType = map.tiles[tileIndex];
 
-                // 绘制不同颜色背景
-                context.save();
-                if (isWall) {
-                    // 墙壁 - 用红色背景
-                    context.fillStyle = 'rgba(255, 0, 0, 0.2)';
-                } else {
-                    // 地面 - 用蓝色背景
-                    context.fillStyle = 'rgba(0, 0, 255, 0.2)';
+                // 如果该位置有瓦片
+                if (tileType !== 0) {
+                    // 计算瓦片的世界坐标
+                    const worldX = col * tileSize;
+                    const worldY = row * tileSize;
+
+                    // 转换为屏幕坐标（考虑地图偏移）
+                    const screenPos = map.worldToScreen(worldX, worldY);
+
+                    // 判断是墙壁还是地面
+                    const isWall = map.isTileWall(col, row);
+
+                    // 绘制不同颜色背景
+                    context.save();
+                    if (isWall) {
+                        // 墙壁 - 用红色背景
+                        context.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                    } else {
+                        // 地面 - 用蓝色背景
+                        context.fillStyle = 'rgba(0, 0, 255, 0.2)';
+                    }
+                    context.fillRect(screenPos.x, screenPos.y, tileSize, tileSize);
+                    context.restore();
                 }
-                context.fillRect(x, y, map.tileSize, map.tileSize);
-                context.restore();
             }
         }
+    }
+
+    // 绘制摄像机调试信息
+    drawCameraDebug(map) {
+        if (!this.enabled || !map) return;
+
+        const context = this.game.context;
+        context.save();
+
+        // 绘制背景
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        context.fillRect(10, 160, 300, 250);
+
+        // 显示摄像机信息
+        context.fillStyle = 'white';
+        context.font = '16px Arial';
+        context.textBaseline = 'top';
+
+        const debugInfo = [
+            `摄像机信息：`,
+            `地图偏移X: ${Math.round(map.offsetX)}`,
+            `玩家世界位置X: ${Math.round(map.player ? map.player.x : 0)}`,
+            `玩家世界位置Y: ${Math.round(map.player ? map.player.y : 0)}`,
+            `玩家屏幕位置X: ${Math.round(map.player ? map.player.x + map.offsetX : 0)}`,
+            `敌人位置X: ${Math.round(map.game.scene.enemy ? map.game.scene.enemy.x : 0)}`,
+            `地图宽度: ${map.mapWidth}像素 (${map.tw}列)`,
+            `画布宽度: ${map.game.canvasWidth}像素`,
+            `固定位置: ${Math.floor(map.game.canvasWidth / 3)}`,
+            `地图尽头: ${-(map.mapWidth - map.game.canvasWidth)}像素`,
+            `到达左边界: ${map.reachedLeftBoundary ? '是' : '否'}`,
+            `到达右边界: ${map.reachedRightBoundary ? '是' : '否'}`
+        ];
+
+        let textY = 170;
+        for (const line of debugInfo) {
+            context.fillText(line, 20, textY);
+            textY += 20;
+        }
+
+        // 绘制控制提示
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        context.fillRect(10, 420, 300, 120);
+        context.fillStyle = 'yellow';
+
+        const controlsInfo = [
+            '控制说明:',
+            'A/D - 左右移动',
+            'K - 跳跃',
+            'J - 攻击',
+            'Z/X - 手动滚动地图',
+            'R - 重置位置'
+        ];
+
+        textY = 430;
+        for (const line of controlsInfo) {
+            context.fillText(line, 20, textY);
+            textY += 20;
+        }
+
+        context.restore();
     }
 }

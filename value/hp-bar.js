@@ -10,7 +10,14 @@ class HpBar {
         this.greenW = this.w // 绿色条长度
         this.redW = 0 // 红色条长度
         this.isRemove = false // 是否要画血条
+        this.character = null // 关联的角色，用于获取地图偏移
     }
+
+    // 设置关联的角色
+    setCharacter(character) {
+        this.character = character
+    }
+
     remove() {
         this.isRemove = true
     }
@@ -28,11 +35,23 @@ class HpBar {
         if (this.isRemove) {
             return
         }
+
+        // 计算血条的屏幕坐标（考虑地图偏移）
+        let screenX = this.x
+        let screenY = this.y
+
+        // 如果关联的角色有地图且地图有偏移功能
+        if (this.character && this.character.map && this.character.map.worldToScreen) {
+            const screenPos = this.character.map.worldToScreen(this.x, this.y)
+            screenX = screenPos.x
+            screenY = screenPos.y
+        }
+
         // 画绿色血条
         this.game.context.fillStyle = "green"
-        this.game.context.fillRect(this.x, this.y, this.greenW, 10)
+        this.game.context.fillRect(screenX, screenY, this.greenW, 10)
         // 画红色血条
         this.game.context.fillStyle = 'red'
-        this.game.context.fillRect(this.x + this.w * this.percentage < this.x ? this.x : this.x + this.w * this.percentage, this.y, this.redW, 10)
+        this.game.context.fillRect(screenX + this.w * this.percentage < screenX ? screenX : screenX + this.w * this.percentage, screenY, this.redW, 10)
     }
 }

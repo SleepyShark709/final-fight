@@ -7,7 +7,14 @@ class AttackValue {
         this.color = '#ffffff'
         this.text = ''
         this.isShow = false
+        this.character = null // 关联的角色，用于获取地图偏移
     }
+
+    // 设置关联的角色
+    setCharacter(character) {
+        this.character = character
+    }
+
     setShow(show) {
         this.isShow = show
     }
@@ -29,9 +36,20 @@ class AttackValue {
     }
     draw() {
         if (this.isShow) {
+            // 计算伤害值的屏幕坐标（考虑地图偏移）
+            let screenX = this.x
+            let screenY = this.y
+
+            // 如果关联的角色有地图且地图有偏移功能
+            if (this.character && this.character.map && this.character.map.worldToScreen) {
+                const screenPos = this.character.map.worldToScreen(this.x, this.y)
+                screenX = screenPos.x
+                screenY = screenPos.y
+            }
+
             this.game.context.font = "20px serif";
             this.game.context.fillStyle = this.color
-            this.game.context.fillText(this.text, this.x, this.y)
+            this.game.context.fillText(this.text, screenX, screenY)
         }
     }
 }

@@ -6,17 +6,55 @@ class GameTileMap {
          * 那 offset 修改了，角色判断地图砖块的逻辑也要修改，然后要根据角色的移动去移动这个 offset
          * */
 
+        // 摄像机系统
+        this.cameraX = 0 // 摄像机X位置
+        this.cameraWidth = game.canvasWidth // 摄像机宽度
+        this.cameraHeight = game.canvasHeight // 摄像机高度
+        this.followPlayer = true // 是否跟随玩家
+        this.followOffsetX = 200 // 摄像机跟随玩家的水平偏移量（使玩家位于屏幕中心偏左位置）
+        this.player = null // 引用玩家对象，用于摄像机跟随
+        this.mapWidth = 0 // 地图总宽度，将在初始化后计算
+        this.isBlocked = false // 玩家是否被阻挡不能移动
+        this.reachedRightBoundary = false // 是否到达右边界
+        this.reachedLeftBoundary = false // 是否到达左边界
 
-        this.offsetX = 10
+        this.offsetX = 0 // 初始偏移为0
 
         /*
          * 这个地图样例是
          * 第一排为第一列从上至下
          * 第二排为第二列从上至下
          * */
-        this.tiles = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 8, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 11, 5, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 1, 4, 11, 11, 6, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 2, 11, 11, 11, 6, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 3, 11, 11, 8, 7, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 2, 6, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 2, 6, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 3, 8, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 1, 5, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 2, 6, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 3, 7, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11]
-        this.th = 16
-        this.tw = this.tiles.length / this.th // tw 是一个整数
+        // 原始地图数据
+        const originalMapData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 8, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 11, 5, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 1, 4, 11, 11, 6, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 2, 11, 11, 11, 6, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 3, 11, 11, 8, 7, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 2, 6, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 2, 6, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 3, 8, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 1, 5, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 2, 6, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 3, 7, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11];
+
+        // 计算原始地图宽度
+        this.th = 16; // 高度为16行
+        const originalWidth = originalMapData.length / this.th; // 原始宽度(列数)
+
+        // 创建扩展地图 - 将原始地图复制5次
+        this.tiles = [];
+        const repeatCount = 5; // 重复5次以创建更长的地图
+
+        for (let repeat = 0; repeat < repeatCount; repeat++) {
+            // 复制原始地图数据
+            for (let i = 0; i < originalMapData.length; i++) {
+                // 为每个重复段添加一些变化，使地图更有趣
+                let tileValue = originalMapData[i];
+
+                // 添加一些随机障碍物和平台(在非第一段地图中)
+                if (repeat > 0 && tileValue === 0 && Math.random() < 0.05) {
+                    // 5%概率添加砖块
+                    tileValue = Math.floor(Math.random() * 8) + 2; // 随机砖块类型
+                }
+
+                this.tiles.push(tileValue);
+            }
+        }
+
+        // 更新地图宽度(列数)
+        this.tw = originalWidth * repeatCount;
+
         this.tileImages = [
             new GameImage(game, 't1'),
             new GameImage(game, 't2'),
@@ -31,14 +69,77 @@ class GameTileMap {
             new GameImage(game, 't11'),
         ]
         this.tileSize = 32
+
+        // 计算地图总宽度(像素)
+        this.mapWidth = this.tw * this.tileSize;
+        console.log('扩展后的地图宽度(像素):', this.mapWidth);
     }
 
     static new(...args) {
         return new this(...args)
     }
 
+    // 设置要跟随的玩家对象
+    setPlayer(player) {
+        this.player = player
+    }
+
+    // 计算摄像机的位置，基于玩家位置
+    updateCamera() {
+        if (!this.followPlayer || !this.player) {
+            return;
+        }
+
+        // 记录调试信息
+        const originalPlayerX = this.player.x;
+
+        // 简化逻辑：将摄像机位置简单地固定在画布宽度的1/3处
+        // 这样玩家可以看到更多前方的场景
+        const cameraFixedX = Math.floor(this.game.canvasWidth / 3);
+
+        // 计算理想的地图偏移量：让玩家位于固定位置
+        const idealOffsetX = -(this.player.x - cameraFixedX);
+
+        // 限制地图偏移不超过边界
+        // 最小偏移（最左边）：0
+        // 最大偏移（最右边）：-(地图宽度 - 画布宽度)
+        const maxOffsetX = -(this.mapWidth - this.game.canvasWidth);
+
+        // 应用地图偏移（考虑边界）
+        if (idealOffsetX > 0) {
+            // 到达地图左边界
+            this.offsetX = 0;
+            this.reachedLeftBoundary = true;
+        } else if (idealOffsetX < maxOffsetX) {
+            // 到达地图右边界
+            this.offsetX = maxOffsetX;
+            this.reachedRightBoundary = true;
+        } else {
+            // 正常滚动区域
+            this.offsetX = idealOffsetX;
+            this.reachedLeftBoundary = false;
+            this.reachedRightBoundary = false;
+        }
+
+        // 调试信息
+        if (this.game.frameCount % 60 === 0) {
+            console.log('摄像机跟随:', {
+                玩家位置: originalPlayerX,
+                固定位置: cameraFixedX,
+                理想偏移: idealOffsetX,
+                实际偏移: this.offsetX,
+                左边界: this.reachedLeftBoundary,
+                右边界: this.reachedRightBoundary
+            });
+        }
+
+        // 更新摄像机位置用于调试显示
+        this.cameraX = -this.offsetX;
+    }
+
     update() {
-        this.offsetX -= 1
+        // 更新摄像机位置
+        this.updateCamera()
     }
 
     // 检查某个位置是否有砖块
@@ -86,27 +187,48 @@ class GameTileMap {
         return this.tiles[index];
     }
 
-    draw() {
-        let h = this.th
-        // 限制超出屏幕的东西不要画
-        let offsetIndex = Math.abs(parseInt(this.offsetX / this.tileSize))
-        let numberOfTiles = h * (12 + 1)
-
-        if (offsetIndex + numberOfTiles < this.tiles.length) {
-            numberOfTiles = this.tiles.length
-        }
-
-        for (let i = 0; i < numberOfTiles; i++) {
-            let index = this.tiles[i]
-            if (index !== 0) {
-                let x = Math.floor(i / h) * this.tileSize
-                let y = (i % h) * this.tileSize
-
-                // 绘制瓦片图像
-                let image = this.tileImages[index - 1]
-                this.game.context.drawImage(image.texture, x, y, this.tileSize, this.tileSize)
-            }
+    // 世界坐标转换为屏幕坐标
+    worldToScreen(x, y) {
+        return {
+            x: x + this.offsetX,
+            y: y
         }
     }
 
+    // 屏幕坐标转换为世界坐标
+    screenToWorld(x, y) {
+        return {
+            x: x - this.offsetX,
+            y: y
+        }
+    }
+
+    draw() {
+        let h = this.th
+        let w = this.tw
+
+        // 根据偏移量计算可见区域的起始和结束列
+        let startCol = Math.floor(-this.offsetX / this.tileSize)
+        startCol = Math.max(0, startCol)
+
+        let endCol = startCol + Math.ceil(this.game.canvasWidth / this.tileSize) + 1
+        endCol = Math.min(endCol, w)
+
+        // 只绘制可见区域内的瓦片
+        for (let i = startCol; i < endCol; i++) {
+            for (let j = 0; j < h; j++) {
+                let index = i * h + j
+                let tile = this.tiles[index]
+
+                if (tile !== 0) {
+                    let x = i * this.tileSize + this.offsetX
+                    let y = j * this.tileSize
+
+                    // 绘制瓦片图像
+                    let image = this.tileImages[tile - 1]
+                    this.game.context.drawImage(image.texture, x, y, this.tileSize, this.tileSize)
+                }
+            }
+        }
+    }
 }
