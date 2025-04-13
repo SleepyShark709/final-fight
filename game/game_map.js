@@ -155,27 +155,48 @@ class GameTileMap {
     // 新增：判断某个位置是墙壁还是地面
     // 墙壁通常是垂直方向的砖块，地面是水平方向的砖块
     isTileWall(i, j) {
-        // 检查上下位置是否都是空白，如果是则认为是墙壁
+        // 首先检查该位置是否有砖块
         let tile = this.getTile(i, j);
         if (tile === 0) {
             return false; // 不是砖块
         }
 
-        // 检查下方位置是否为空，如果下方为空则不是墙壁
-        let belowTile = this.getTile(i, j + 1);
+        // 获取上下左右位置的砖块情况
+        let aboveTile = this.getTile(i, j - 1); // 上方
+        let belowTile = this.getTile(i, j + 1); // 下方
+        let leftTile = this.getTile(i - 1, j); // 左侧
+        let rightTile = this.getTile(i + 1, j); // 右侧
 
-        // 检查左右位置的砖块情况
-        let leftTile = this.getTile(i - 1, j);
-        let rightTile = this.getTile(i + 1, j);
+        // 增加调试日志
+        console.log(`墙壁检测: 位置(${i}, ${j}), 上=${aboveTile}, 下=${belowTile}, 左=${leftTile}, 右=${rightTile}`);
 
-        // 如果左右任一侧有砖块，则更可能是墙壁
-        let horizontalBlock = (leftTile !== 0 && leftTile !== undefined) ||
-            (rightTile !== 0 && rightTile !== undefined);
+        // 改进的墙壁判定逻辑:
+        // 1. 如果砖块的下方是空的，这很可能是平台/地面的边缘，不是墙壁
+        if (belowTile === 0 || belowTile === undefined) {
+            console.log(`位置(${i}, ${j})不是墙壁: 下方为空`);
+            return false;
+        }
 
-        // 新的墙壁判断逻辑：
-        // 1. 当前位置有砖块
-        // 2. 左右方向有连续砖块
-        return horizontalBlock;
+        // 2. 如果上方是空的，而下方不是空的，这是正常的地面，不是墙壁
+        if ((aboveTile === 0 || aboveTile === undefined) && belowTile !== 0) {
+            console.log(`位置(${i}, ${j})不是墙壁: 符合地面特征`);
+            return false;
+        }
+
+        // 3. 如果左右都有砖块，但上方是空的，这是连续地面，不是墙壁
+        if ((leftTile !== 0 && leftTile !== undefined) &&
+            (rightTile !== 0 && rightTile !== undefined) &&
+            (aboveTile === 0 || aboveTile === undefined)) {
+            console.log(`位置(${i}, ${j})不是墙壁: 左右连续地面`);
+            return false;
+        }
+
+        // 4. 大多数其他情况为垂直结构的墙壁
+        let isWall = (aboveTile !== 0 && aboveTile !== undefined) ||
+            (leftTile !== 0 && rightTile !== 0);
+
+        console.log(`位置(${i}, ${j})${isWall ? '是' : '不是'}墙壁`);
+        return isWall;
     }
 
     // 获取指定位置的瓦片类型
