@@ -144,10 +144,14 @@ class Scene extends GameScene {
                     } else {
                         this.enemy.move(3)
                     }
+                } else {
+                    // 敌人与玩家不在同一水平面附近时停止移动
+                    this.enemy.isMoving = false // 更新静止动画帧
                 }
             } else {
                 // 如果玩家在敌人非常远的上方或下方，敌人会保持站立不动
                 // 或者可以让敌人巡逻或执行其他行为
+                this.enemy.isMoving = false // 更新静止动画帧
             }
             this.enemy.isAttack = false;
         } else {

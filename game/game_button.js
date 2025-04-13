@@ -1,6 +1,0 @@
-class GameButton {
-    constructor(props) {
-
-    }
-
-}
