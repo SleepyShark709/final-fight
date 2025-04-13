@@ -112,8 +112,20 @@ class Player extends Character {
         let footX = Math.floor((this.x + this.w / 2) / this.tileSize)
         let footY = Math.floor((this.y + this.h) / this.tileSize)
 
-        // 检查脚下是否有地面
+        // 检查脚下是否有地面 - 修改为检查脚下中心位置
         let onTheGround = this.map.onTheGround(footX, footY)
+
+        // 增加：检查左右脚位置，提高站在边缘时的稳定性
+        // 当玩家站在砖块边缘时，防止掉落
+        if (!onTheGround) {
+            // 检查左脚和右脚
+            const leftFootX = Math.floor((this.x + this.w * 0.3) / this.tileSize);
+            const rightFootX = Math.floor((this.x + this.w * 0.7) / this.tileSize);
+
+            // 如果左脚或右脚下方有砖块，就认为玩家站在地面上
+            onTheGround = this.map.onTheGround(leftFootX, footY) ||
+                this.map.onTheGround(rightFootX, footY);
+        }
 
         // 检测上一帧是否已经在地面上
         let wasOnGround = this.isOnGround

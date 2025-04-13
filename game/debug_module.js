@@ -149,6 +149,64 @@ class DebugModule {
         const rightWall = player.map && player.map.isTileWall ?
             checkPoints.some(y => player.map.onTheGround(rightWallX, y) && player.map.isTileWall(rightWallX, y)) : false;
 
+        // 添加：可视化地面检测区域
+        if (player.map) {
+            // 显示地面检测点
+            const groundCheckX = footX * player.tileSize + player.map.offsetX;
+            const groundCheckY = footY * player.tileSize;
+
+            // 绘制中心地面检测点
+            context.fillStyle = 'rgba(255, 255, 0, 0.7)'; // 黄色，更醒目
+            context.beginPath();
+            context.arc(groundCheckX, groundCheckY, 5, 0, Math.PI * 2);
+            context.fill();
+
+            // 绘制从脚底到检测点的连线
+            context.strokeStyle = 'yellow';
+            context.lineWidth = 1;
+            context.beginPath();
+            context.moveTo(screenX + player.w / 2, player.y + player.h);
+            context.lineTo(groundCheckX, groundCheckY);
+            context.stroke();
+
+            // 添加：绘制左右脚地面检测点
+            const leftFootX = Math.floor((player.x + player.w * 0.3) / player.tileSize);
+            const rightFootX = Math.floor((player.x + player.w * 0.7) / player.tileSize);
+
+            // 左脚检测点
+            const leftGroundX = leftFootX * player.tileSize + player.map.offsetX;
+            const leftGroundY = footY * player.tileSize;
+            context.fillStyle = 'rgba(0, 255, 255, 0.7)'; // 青色
+            context.beginPath();
+            context.arc(leftGroundX, leftGroundY, 4, 0, Math.PI * 2);
+            context.fill();
+
+            // 右脚检测点
+            const rightGroundX = rightFootX * player.tileSize + player.map.offsetX;
+            const rightGroundY = footY * player.tileSize;
+            context.beginPath();
+            context.arc(rightGroundX, rightGroundY, 4, 0, Math.PI * 2);
+            context.fill();
+
+            // 绘制水平碰撞检测点
+            context.fillStyle = 'rgba(255, 0, 255, 0.7)'; // 紫色
+            for (const y of checkPoints) {
+                // 左侧检测点
+                const leftCheckScreenX = leftWallX * player.tileSize + player.map.offsetX;
+                const leftCheckScreenY = y * player.tileSize;
+                context.beginPath();
+                context.arc(leftCheckScreenX, leftCheckScreenY, 3, 0, Math.PI * 2);
+                context.fill();
+
+                // 右侧检测点
+                const rightCheckScreenX = rightWallX * player.tileSize + player.map.offsetX;
+                const rightCheckScreenY = y * player.tileSize;
+                context.beginPath();
+                context.arc(rightCheckScreenX, rightCheckScreenY, 3, 0, Math.PI * 2);
+                context.fill();
+            }
+        }
+
         context.fillStyle = 'white';
         context.font = '16px Arial';
         context.textBaseline = 'top';
@@ -345,7 +403,7 @@ class DebugModule {
 
         // 绘制说明面板背景
         context.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        context.fillRect(this.game.canvasWidth - 210, 160, 200, 80);
+        context.fillRect(this.game.canvasWidth - 210, 160, 200, 170);
 
         // 标题
         context.fillStyle = 'white';
@@ -364,6 +422,30 @@ class DebugModule {
         context.fillRect(this.game.canvasWidth - 190, 230, 20, 20);
         context.fillStyle = 'white';
         context.fillText('地面 (可站立)', this.game.canvasWidth - 160, 230);
+
+        // 地面检测点示例
+        context.fillStyle = 'rgba(255, 255, 0, 0.7)';
+        context.beginPath();
+        context.arc(this.game.canvasWidth - 180, 260, 5, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = 'white';
+        context.fillText('中心地面检测点', this.game.canvasWidth - 160, 260);
+
+        // 左右脚检测点示例
+        context.fillStyle = 'rgba(0, 255, 255, 0.7)';
+        context.beginPath();
+        context.arc(this.game.canvasWidth - 180, 290, 4, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = 'white';
+        context.fillText('左右脚检测点', this.game.canvasWidth - 160, 290);
+
+        // 水平碰撞检测点示例
+        context.fillStyle = 'rgba(255, 0, 255, 0.7)';
+        context.beginPath();
+        context.arc(this.game.canvasWidth - 180, 320, 3, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = 'white';
+        context.fillText('水平碰撞点', this.game.canvasWidth - 160, 320);
 
         context.restore();
     }
