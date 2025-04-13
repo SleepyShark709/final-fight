@@ -57,7 +57,7 @@ class Scene extends GameScene {
         enemy.x = 500
         enemy.y = 354
         // 将敌人也关联到地图系统中
-        enemy.map = map
+        enemy.setMap(map)
         this.addElement(enemy)
 
         // 添加伤害冷却时间

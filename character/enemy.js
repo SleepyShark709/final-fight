@@ -27,7 +27,15 @@ class Enemy extends Character {
         this.cooldown = ENEMY_COOL_DOWN
         this.isDead = false // 死亡状态
         this.isPlayer = false // 是否是玩家
+        // 添加地图引用，用于碰撞检测
+        this.map = null
     }
+
+    // 设置地图引用
+    setMap(map) {
+        this.map = map
+    }
+
     initAttackFrame(game) {
         for (let i = 0; i < ENEMY_ATTACK_NUMBER; i++) {
             let name = `eattack${i}`
@@ -123,6 +131,94 @@ class Enemy extends Character {
             this.cooldown = ENEMY_COOL_DOWN // 设置冷却为10帧
             this.frames = this.attack1Frames // 设置攻击的 frame
             this.isAttack = true
+        }
+    }
+
+    // 敌人墙壁碰撞检测
+    checkWallCollision(x) {
+        // 如果没有地图引用，不执行碰撞检测
+        if (!this.map) {
+            return true; // 允许移动
+        }
+
+        // 简化碰撞检测
+        let canMove = true;
+
+        if (x < 0) {
+            // 向左移动，检查左侧碰撞
+            const centerX = Math.floor((this.x + this.w / 2) / this.map.tileSize);
+            const leftCheckX = centerX - 1; // 以敌人中心左侧一格为检测点
+
+            // 调整检测点位置，使碰撞区域下移
+            // 原来是检测点在高度的20%、50%和80%处
+            // 现在改为检测点在高度的50%、70%和90%处，忽略敌人上半部分
+            const checkPoints = [
+                Math.floor((this.y + this.h * 0.5) / this.map.tileSize),
+                Math.floor((this.y + this.h * 0.7) / this.map.tileSize),
+                Math.floor((this.y + this.h * 0.9) / this.map.tileSize)
+            ]
+
+            // 任一位置有墙壁都不能移动
+            canMove = !checkPoints.some(y => {
+                // 使用修改后的墙壁检测逻辑
+                const hasTile = this.map.onTheGround(leftCheckX, y);
+                const isWall = hasTile && this.map.isTileWall(leftCheckX, y);
+                return isWall;
+            });
+        } else {
+            // 向右移动，检查右侧碰撞
+            const centerX = Math.floor((this.x + this.w / 2) / this.map.tileSize);
+            const rightCheckX = centerX + 1; // 以敌人中心右侧一格为检测点
+
+            // 调整检测点位置，使碰撞区域下移
+            const checkPoints = [
+                Math.floor((this.y + this.h * 0.5) / this.map.tileSize),
+                Math.floor((this.y + this.h * 0.7) / this.map.tileSize),
+                Math.floor((this.y + this.h * 0.9) / this.map.tileSize)
+            ]
+
+            // 任一位置有墙壁都不能移动
+            canMove = !checkPoints.some(y => {
+                // 使用修改后的墙壁检测逻辑
+                const hasTile = this.map.onTheGround(rightCheckX, y);
+                const isWall = hasTile && this.map.isTileWall(rightCheckX, y);
+                return isWall;
+            });
+        }
+
+        return canMove;
+    }
+
+    // 重写移动方法，增加碰撞检测
+    move(x) {
+        if (this.isDie === false) {
+            // 检查是否可以移动
+            const canMove = this.checkWallCollision(x);
+
+            // 在移动的时候更换动作
+            this.isMoving = true
+
+            // 设置移动方向
+            if (x < 0) {
+                // 向左移动
+                this.movingDirection = 'left'
+            } else {
+                this.movingDirection = 'right'
+            }
+
+            // 如果可以移动，更新位置
+            if (canMove) {
+                // 更新坐标位置
+                this.x += x
+            }
+
+            // 设置角色朝向
+            this.flipX = this.defaultLocation === 'right' ? x < 0 : this.defaultLocation === 'left' ? x > 0 : false;
+
+            // 如果没在跳跃或攻击状态，则设置为奔跑动画
+            if (this.isJump === false && this.isAttack === false) {
+                this.frames = this.runFrames
+            }
         }
     }
 }
