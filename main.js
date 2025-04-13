@@ -1,4 +1,3 @@
-
 const __main = () => {
 
     // 这个地方是加了一个滑动条来控制帧率
@@ -6,6 +5,7 @@ const __main = () => {
     let zhen = document.querySelector('.zhen')
     let fps = FPS
     input.value = FPS
+    zhen.innerHTML = `帧率（${fps}）`
     input.addEventListener('input', (event) => {
         let input = event.target
         fps = Number(input.value)
@@ -26,7 +26,7 @@ const __main = () => {
     images = Object.assign(images, enemyImages)
     images = Object.assign(images, mapImages)
 
-    var game = new Game(FPS, images, function(g) {
+    var game = new Game(FPS, images, function (g) {
         // var s = SceneTitle.new(g)
         var s = SceneTitle.new(g)
         g.runWithScene(s)
