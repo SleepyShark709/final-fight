@@ -1,0 +1,43 @@
+export class EnemyImages {
+  images: { [key: string]: string };
+  constructor() {
+    this.images = {
+      eidle0: "image/enemy/idle/0.png",
+      eidle1: "image/enemy/idle/1.png",
+      eidle2: "image/enemy/idle/2.png",
+      eidle3: "image/enemy/idle/3.png",
+      // eidle4: 'image/enemy/idle/4.png',
+      // eidle5: 'image/enemy/idle/5.png',
+      // eidle6: 'image/enemy/idle/6.png',
+      // eidle7: 'image/enemy/idle/7.png',
+      edie0: "image/enemy/die/0.png",
+      edie1: "image/enemy/die/1.png",
+      edie2: "image/enemy/die/2.png",
+      edie3: "image/enemy/die/3.png",
+      // edie4: 'image/enemy/die/4.png',
+      // edie5: 'image/enemy/die/5.png',
+      // edie6: 'image/enemy/die/6.png',
+      // edie7: 'image/enemy/die/7.png',
+      // edie8: 'image/enemy/die/8.png',
+      // edie9: 'image/enemy/die/9.png',
+      ewalk0: "image/enemy/walk/0.png",
+      ewalk1: "image/enemy/walk/1.png",
+      ewalk2: "image/enemy/walk/2.png",
+      ewalk3: "image/enemy/walk/3.png",
+      ewalk4: "image/enemy/walk/4.png",
+      ewalk5: "image/enemy/walk/5.png",
+      // ewalk6: 'image/enemy/walk/6.png',
+      // ewalk7: 'image/enemy/walk/7.png',
+      eattack0: "image/enemy/attack/0.png",
+      eattack1: "image/enemy/attack/1.png",
+      eattack2: "image/enemy/attack/2.png",
+      eattack3: "image/enemy/attack/3.png",
+      eattack4: "image/enemy/attack/4.png",
+      eattack5: "image/enemy/attack/5.png",
+      eattack6: "image/enemy/attack/6.png",
+      eattack7: "image/enemy/attack/7.png",
+      // eattack8: 'image/enemy/attack/8.png',
+      // eattack9: 'image/enemy/attack/9.png',
+    };
+  }
+}
