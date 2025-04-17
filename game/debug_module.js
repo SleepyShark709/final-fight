@@ -115,7 +115,11 @@ class DebugModule {
         // 显示玩家坐标
         context.fillStyle = 'white';
         context.font = '12px Arial';
-        context.fillText(`(${Math.round(player.x)},${Math.round(player.y)})`, screenX, player.y - 5);
+        context.fillText(
+            `(${Math.round(player.x)},${Math.round(player.y)})`,
+            screenX,
+            player.y - 5,
+        );
 
         // 恢复玩家状态信息面板
         context.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -133,21 +137,41 @@ class DebugModule {
         const rightWallX = centerX + 1;
 
         // 检查碰撞状态
-        const onGround = player.map && player.map.onTheGround ?
-            player.map.onTheGround(footX, footY) : false;
-        const headCollision = player.map && player.map.onTheGround ?
-            player.map.onTheGround(headX, headY) : false;
+        const onGround =
+            player.map && player.map.onTheGround
+                ? player.map.onTheGround(footX, footY)
+                : false;
+        const headCollision =
+            player.map && player.map.onTheGround
+                ? player.map.onTheGround(headX, headY)
+                : false;
 
         // 检查三个高度位置进行水平碰撞检测
         const topY = Math.floor((player.y + player.h * 0.2) / player.tileSize);
-        const middleY = Math.floor((player.y + player.h * 0.5) / player.tileSize);
-        const bottomY = Math.floor((player.y + player.h * 0.8) / player.tileSize);
+        const middleY = Math.floor(
+            (player.y + player.h * 0.5) / player.tileSize,
+        );
+        const bottomY = Math.floor(
+            (player.y + player.h * 0.8) / player.tileSize,
+        );
 
         const checkPoints = [topY, middleY, bottomY];
-        const leftWall = player.map && player.map.isTileWall ?
-            checkPoints.some(y => player.map.onTheGround(leftWallX, y) && player.map.isTileWall(leftWallX, y)) : false;
-        const rightWall = player.map && player.map.isTileWall ?
-            checkPoints.some(y => player.map.onTheGround(rightWallX, y) && player.map.isTileWall(rightWallX, y)) : false;
+        const leftWall =
+            player.map && player.map.isTileWall
+                ? checkPoints.some(
+                      (y) =>
+                          player.map.onTheGround(leftWallX, y) &&
+                          player.map.isTileWall(leftWallX, y),
+                  )
+                : false;
+        const rightWall =
+            player.map && player.map.isTileWall
+                ? checkPoints.some(
+                      (y) =>
+                          player.map.onTheGround(rightWallX, y) &&
+                          player.map.isTileWall(rightWallX, y),
+                  )
+                : false;
 
         // 添加：可视化地面检测区域
         if (player.map) {
@@ -170,11 +194,16 @@ class DebugModule {
             context.stroke();
 
             // 添加：绘制左右脚地面检测点
-            const leftFootX = Math.floor((player.x + player.w * 0.3) / player.tileSize);
-            const rightFootX = Math.floor((player.x + player.w * 0.7) / player.tileSize);
+            const leftFootX = Math.floor(
+                (player.x + player.w * 0.3) / player.tileSize,
+            );
+            const rightFootX = Math.floor(
+                (player.x + player.w * 0.7) / player.tileSize,
+            );
 
             // 左脚检测点
-            const leftGroundX = leftFootX * player.tileSize + player.map.offsetX;
+            const leftGroundX =
+                leftFootX * player.tileSize + player.map.offsetX;
             const leftGroundY = footY * player.tileSize;
             context.fillStyle = 'rgba(0, 255, 255, 0.7)'; // 青色
             context.beginPath();
@@ -182,7 +211,8 @@ class DebugModule {
             context.fill();
 
             // 右脚检测点
-            const rightGroundX = rightFootX * player.tileSize + player.map.offsetX;
+            const rightGroundX =
+                rightFootX * player.tileSize + player.map.offsetX;
             const rightGroundY = footY * player.tileSize;
             context.beginPath();
             context.arc(rightGroundX, rightGroundY, 4, 0, Math.PI * 2);
@@ -192,17 +222,31 @@ class DebugModule {
             context.fillStyle = 'rgba(255, 0, 255, 0.7)'; // 紫色
             for (const y of checkPoints) {
                 // 左侧检测点
-                const leftCheckScreenX = leftWallX * player.tileSize + player.map.offsetX;
+                const leftCheckScreenX =
+                    leftWallX * player.tileSize + player.map.offsetX;
                 const leftCheckScreenY = y * player.tileSize;
                 context.beginPath();
-                context.arc(leftCheckScreenX, leftCheckScreenY, 3, 0, Math.PI * 2);
+                context.arc(
+                    leftCheckScreenX,
+                    leftCheckScreenY,
+                    3,
+                    0,
+                    Math.PI * 2,
+                );
                 context.fill();
 
                 // 右侧检测点
-                const rightCheckScreenX = rightWallX * player.tileSize + player.map.offsetX;
+                const rightCheckScreenX =
+                    rightWallX * player.tileSize + player.map.offsetX;
                 const rightCheckScreenY = y * player.tileSize;
                 context.beginPath();
-                context.arc(rightCheckScreenX, rightCheckScreenY, 3, 0, Math.PI * 2);
+                context.arc(
+                    rightCheckScreenX,
+                    rightCheckScreenY,
+                    3,
+                    0,
+                    Math.PI * 2,
+                );
                 context.fill();
             }
         }
@@ -215,10 +259,16 @@ class DebugModule {
         const debugInfo = [
             `玩家信息：`,
             `位置: (${Math.floor(player.x)}, ${Math.floor(player.y)})`,
-            `速度: vx=${player.vx ? player.vx.toFixed(1) : '0'}, vy=${player.vy ? player.vy.toFixed(1) : '0'}`,
-            `地面: ${onGround ? '是' : '否'}, 头部: ${headCollision ? '是' : '否'}`,
+            `速度: vx=${player.vx ? player.vx.toFixed(1) : '0'}, vy=${
+                player.vy ? player.vy.toFixed(1) : '0'
+            }`,
+            `地面: ${onGround ? '是' : '否'}, 头部: ${
+                headCollision ? '是' : '否'
+            }`,
             `左墙: ${leftWall ? '是' : '否'}, 右墙: ${rightWall ? '是' : '否'}`,
-            `跳跃: ${player.isJump ? '是' : '否'}, 地面状态: ${player.isOnGround ? '是' : '否'}`
+            `跳跃: ${player.isJump ? '是' : '否'}, 地面状态: ${
+                player.isOnGround ? '是' : '否'
+            }`,
         ];
 
         let textY = 15;
@@ -275,7 +325,11 @@ class DebugModule {
         // 显示敌人坐标和状态
         context.fillStyle = 'white';
         context.font = '12px Arial';
-        context.fillText(`(${Math.round(enemy.x)},${Math.round(enemy.y)})`, screenX, enemy.y - 5);
+        context.fillText(
+            `(${Math.round(enemy.x)},${Math.round(enemy.y)})`,
+            screenX,
+            enemy.y - 5,
+        );
         if (enemy.isDead || enemy.isDie) {
             context.fillText('已死亡', screenX, enemy.y - 20);
         }
@@ -326,7 +380,12 @@ class DebugModule {
                         // 地面 - 用蓝色背景
                         context.fillStyle = 'rgba(0, 0, 255, 0.2)';
                     }
-                    context.fillRect(screenPos.x, screenPos.y, tileSize, tileSize);
+                    context.fillRect(
+                        screenPos.x,
+                        screenPos.y,
+                        tileSize,
+                        tileSize,
+                    );
                     context.restore();
                 }
             }
@@ -354,14 +413,18 @@ class DebugModule {
             `地图偏移X: ${Math.round(map.offsetX)}`,
             `玩家世界位置X: ${Math.round(map.player ? map.player.x : 0)}`,
             `玩家世界位置Y: ${Math.round(map.player ? map.player.y : 0)}`,
-            `玩家屏幕位置X: ${Math.round(map.player ? map.player.x + map.offsetX : 0)}`,
-            `敌人位置X: ${Math.round(map.game.scene.enemy ? map.game.scene.enemy.x : 0)}`,
+            `玩家屏幕位置X: ${Math.round(
+                map.player ? map.player.x + map.offsetX : 0,
+            )}`,
+            `敌人位置X: ${Math.round(
+                map.game.scene.enemy ? map.game.scene.enemy.x : 0,
+            )}`,
             `地图宽度: ${map.mapWidth}像素 (${map.tw}列)`,
             `画布宽度: ${map.game.canvasWidth}像素`,
             `固定位置: ${Math.floor(map.game.canvasWidth / 3)}`,
             `地图尽头: ${-(map.mapWidth - map.game.canvasWidth)}像素`,
             `到达左边界: ${map.reachedLeftBoundary ? '是' : '否'}`,
-            `到达右边界: ${map.reachedRightBoundary ? '是' : '否'}`
+            `到达右边界: ${map.reachedRightBoundary ? '是' : '否'}`,
         ];
 
         let textY = 170;
@@ -382,7 +445,7 @@ class DebugModule {
             'J - 攻击',
             'Z/X - 手动滚动地图',
             'R - 重置位置',
-            'P - 切换调试显示'
+            'P - 切换调试显示',
         ];
 
         textY = 20;
@@ -446,6 +509,158 @@ class DebugModule {
         context.fill();
         context.fillStyle = 'white';
         context.fillText('水平碰撞点', this.game.canvasWidth - 160, 320);
+
+        context.restore();
+    }
+
+    // 绘制宠物碰撞盒
+    drawPetCollision(pet) {
+        if (!this.enabled || !pet) return;
+
+        const context = this.game.context;
+        context.save();
+
+        // 计算宠物屏幕位置
+        let screenX = pet.x;
+        if (pet.map && pet.map.offsetX !== undefined) {
+            screenX += pet.map.offsetX;
+        }
+
+        // 绘制宠物外框
+        context.strokeStyle = 'orange';
+        context.lineWidth = 2;
+        context.strokeRect(screenX, pet.y, pet.w, pet.h);
+
+        // 绘制脚部位置辅助线
+        context.strokeStyle = 'yellow';
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(screenX, pet.y + pet.h);
+        context.lineTo(screenX + pet.w, pet.y + pet.h);
+        context.stroke();
+
+        // 显示宠物坐标
+        context.fillStyle = 'white';
+        context.font = '12px Arial';
+        context.fillText(
+            `(${Math.round(pet.x)},${Math.round(pet.y)})`,
+            screenX,
+            pet.y - 5,
+        );
+
+        // 获取碰撞状态信息 - 修正检测点坐标计算
+        const footX = Math.floor((pet.x + pet.w / 2) / pet.tileSize);
+        // 使用与宠物类中相同的计算逻辑
+        const footY = Math.floor((pet.y + pet.h - 1) / pet.tileSize);
+
+        // 添加：可视化地面检测区域
+        if (pet.map) {
+            // 显示地面检测点
+            const groundCheckX = footX * pet.tileSize + pet.map.offsetX;
+            const groundCheckY = footY * pet.tileSize;
+
+            // 绘制中心地面检测点
+            context.fillStyle = 'rgba(255, 165, 0, 0.7)'; // 橙色
+            context.beginPath();
+            context.arc(groundCheckX, groundCheckY, 5, 0, Math.PI * 2);
+            context.fill();
+
+            // 绘制从脚底到检测点的连线
+            context.strokeStyle = 'orange';
+            context.lineWidth = 1;
+            context.beginPath();
+            context.moveTo(screenX + pet.w / 2, pet.y + pet.h);
+            context.lineTo(groundCheckX, groundCheckY);
+            context.stroke();
+
+            // 添加：绘制左右脚地面检测点
+            const leftFootX = Math.floor((pet.x + pet.w * 0.3) / pet.tileSize);
+            const rightFootX = Math.floor((pet.x + pet.w * 0.7) / pet.tileSize);
+
+            // 左脚检测点
+            const leftGroundX = leftFootX * pet.tileSize + pet.map.offsetX;
+            const leftGroundY = footY * pet.tileSize;
+            context.fillStyle = 'rgba(255, 215, 0, 0.7)'; // 金黄色
+            context.beginPath();
+            context.arc(leftGroundX, leftGroundY, 4, 0, Math.PI * 2);
+            context.fill();
+
+            // 右脚检测点
+            const rightGroundX = rightFootX * pet.tileSize + pet.map.offsetX;
+            const rightGroundY = footY * pet.tileSize;
+            context.beginPath();
+            context.arc(rightGroundX, rightGroundY, 4, 0, Math.PI * 2);
+            context.fill();
+
+            // 增加：显示格子顶部线，便于直观判断宠物是否正确接触地面
+            context.strokeStyle = 'lime';
+            context.lineWidth = 2; // 加粗线条更容易看到
+            context.beginPath();
+            // 绘制当前格子的顶部线（宠物应该站在这条线上）
+            const gridTopY = (footY + 1) * pet.tileSize;
+            context.moveTo(screenX - 20, gridTopY);
+            context.lineTo(screenX + pet.w + 20, gridTopY);
+            context.stroke();
+
+            // 增加一个视觉提示来显示宠物底部和格子顶部的差距
+            if (Math.round(pet.y + pet.h) !== gridTopY) {
+                const gap = Math.abs(Math.round(pet.y + pet.h) - gridTopY);
+
+                // 绘制一个半透明的填充区域显示差距
+                context.fillStyle = 'rgba(255, 0, 0, 0.3)'; // 红色半透明
+                if (pet.y + pet.h < gridTopY) {
+                    // 宠物在地面上方
+                    context.fillRect(
+                        screenX,
+                        pet.y + pet.h,
+                        pet.w,
+                        gridTopY - (pet.y + pet.h),
+                    );
+                } else {
+                    // 宠物在地面下方
+                    context.fillRect(
+                        screenX,
+                        gridTopY,
+                        pet.w,
+                        pet.y + pet.h - gridTopY,
+                    );
+                }
+
+                // 标记差距数值
+                context.fillStyle = 'white';
+                context.font = 'bold 12px Arial';
+                context.fillText(
+                    `差距: ${gap}px`,
+                    screenX + pet.w + 5,
+                    (pet.y + pet.h + gridTopY) / 2,
+                );
+            } else {
+                // 如果完全对齐，显示一个绿色的勾号
+                context.fillStyle = 'lime';
+                context.font = 'bold 14px Arial';
+                context.fillText('✓', screenX + pet.w + 5, pet.y + pet.h);
+            }
+        }
+
+        // 在宠物上方显示状态信息
+        const debugInfo = [
+            `在地面: ${pet.isOnGround ? '是' : '否'}`,
+            `vy: ${pet.vy ? pet.vy.toFixed(1) : '0'}`,
+            `footY: ${footY}`,
+            `格子顶部: ${(footY + 1) * pet.tileSize}`,
+            `宠物底部: ${Math.round(pet.y + pet.h)}`,
+        ];
+
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        context.fillRect(screenX - 5, pet.y - 75, 120, 70);
+        context.fillStyle = 'white';
+        context.font = '12px Arial';
+
+        let textY = pet.y - 70;
+        for (const line of debugInfo) {
+            context.fillText(line, screenX, textY);
+            textY += 15; // 增加行间距
+        }
 
         context.restore();
     }
