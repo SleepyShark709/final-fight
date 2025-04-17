@@ -220,24 +220,70 @@ export class DebugModule {
       context.fill();
 
       // 绘制水平碰撞检测点
-      context.fillStyle = "rgba(255, 0, 255, 0.7)"; // 紫色
-      for (const y of checkPoints) {
-        // 左侧检测点
-        const leftCheckScreenX =
-          leftWallX * player.tileSize + player.map.offsetX;
-        const leftCheckScreenY = y * player.tileSize;
+      context.fillStyle = "rgba(255, 0, 255, 0.7)";
+
+      // 绘制左侧碰撞检测点
+      const leftCheckX = centerX - 1;
+      const leftCollisionPoints = [
+        Math.floor((player.y + player.h * 0.4) / player.tileSize),
+        Math.floor((player.y + player.h * 0.6) / player.tileSize),
+        Math.floor((player.y + player.h * 0.8) / player.tileSize),
+      ];
+
+      leftCollisionPoints.forEach((y) => {
+        const collisionX = leftCheckX * player.tileSize + player.map.offsetX;
+        const collisionY = y * player.tileSize;
         context.beginPath();
-        context.arc(leftCheckScreenX, leftCheckScreenY, 3, 0, Math.PI * 2);
+        context.arc(collisionX, collisionY, 4, 0, Math.PI * 2);
         context.fill();
 
-        // 右侧检测点
-        const rightCheckScreenX =
-          rightWallX * player.tileSize + player.map.offsetX;
-        const rightCheckScreenY = y * player.tileSize;
+        // 绘制从角色到检测点的连线
+        context.strokeStyle = "magenta";
+        context.lineWidth = 1;
         context.beginPath();
-        context.arc(rightCheckScreenX, rightCheckScreenY, 3, 0, Math.PI * 2);
+        context.moveTo(screenX, player.y + player.h * 0.4);
+        context.lineTo(collisionX, collisionY);
+        context.stroke();
+      });
+
+      // 绘制右侧碰撞检测点
+      const rightCheckX = centerX + 1;
+      const rightCollisionPoints = [
+        Math.floor((player.y + player.h * 0.4) / player.tileSize),
+        Math.floor((player.y + player.h * 0.6) / player.tileSize),
+        Math.floor((player.y + player.h * 0.8) / player.tileSize),
+      ];
+
+      rightCollisionPoints.forEach((y) => {
+        const collisionX = rightCheckX * player.tileSize + player.map.offsetX;
+        const collisionY = y * player.tileSize;
+        context.beginPath();
+        context.arc(collisionX, collisionY, 4, 0, Math.PI * 2);
         context.fill();
-      }
+
+        // 绘制从角色到检测点的连线
+        context.strokeStyle = "magenta";
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(screenX + player.w, player.y + player.h * 0.4);
+        context.lineTo(collisionX, collisionY);
+        context.stroke();
+      });
+
+      // 添加碰撞检测点的标签
+      context.fillStyle = "white";
+      context.font = "12px Arial";
+      leftCollisionPoints.forEach((y, index) => {
+        const collisionX = leftCheckX * player.tileSize + player.map.offsetX;
+        const collisionY = y * player.tileSize;
+        context.fillText(`L${index + 1}`, collisionX + 6, collisionY - 6);
+      });
+
+      rightCollisionPoints.forEach((y, index) => {
+        const collisionX = rightCheckX * player.tileSize + player.map.offsetX;
+        const collisionY = y * player.tileSize;
+        context.fillText(`R${index + 1}`, collisionX + 6, collisionY - 6);
+      });
     }
 
     context.fillStyle = "white";

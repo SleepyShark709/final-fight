@@ -488,9 +488,13 @@ export class Player extends Character {
       // 先检测水平碰撞
       const hasCollision = this.checkHorizontalCollision();
 
-      // 只有在没有碰撞的情况下才应用水平速度
-      if (!hasCollision && this.vx !== 0) {
+      // 只有在没有碰撞且前方没有障碍物的情况下才应用水平速度
+      if (!hasCollision && !this.isBlockOnFrount && this.vx !== 0) {
         this.x += this.vx;
+      } else {
+        // 如果有碰撞或前方有障碍物，重置水平速度
+        this.vx = 0;
+        this.mx = 0;
       }
     }
 
@@ -637,16 +641,12 @@ export class Player extends Character {
       const centerX = Math.floor((this.x + this.w / 2) / this.tileSize);
       const leftCheckX = centerX - 1; // 以角色中心左侧一格为检测点
 
-      // 修改检测点为主要在角色上半部分，避免误将地面识别为墙壁
+      // 修改检测点位置，主要检测角色下半部分，避免角色穿过墙壁
       const checkPoints = [
-        Math.floor((this.y + this.h * 0.2) / this.tileSize), // 上部位置
-        Math.floor((this.y + this.h * 0.5) / this.tileSize), // 中部位置
+        Math.floor((this.y + this.h * 0.4) / this.tileSize), // 中部偏下位置
+        Math.floor((this.y + this.h * 0.6) / this.tileSize), // 中部位置
+        Math.floor((this.y + this.h * 0.8) / this.tileSize), // 下部位置
       ];
-
-      // 如果不在地面上，也检测脚部位置
-      if (!this.isOnGround) {
-        checkPoints.push(Math.floor((this.y + this.h * 0.8) / this.tileSize)); // 下部位置
-      }
 
       // 任一位置有墙壁都不能移动
       canMove = !checkPoints.some((y) => {
@@ -668,16 +668,12 @@ export class Player extends Character {
       const centerX = Math.floor((this.x + this.w / 2) / this.tileSize);
       const rightCheckX = centerX + 1; // 以角色中心右侧一格为检测点
 
-      // 修改检测点为主要在角色上半部分，避免误将地面识别为墙壁
+      // 修改检测点位置，主要检测角色下半部分，避免角色穿过墙壁
       const checkPoints = [
-        Math.floor((this.y + this.h * 0.2) / this.tileSize), // 上部位置
-        Math.floor((this.y + this.h * 0.5) / this.tileSize), // 中部位置
+        Math.floor((this.y + this.h * 0.4) / this.tileSize), // 中部偏下位置
+        Math.floor((this.y + this.h * 0.6) / this.tileSize), // 中部位置
+        Math.floor((this.y + this.h * 0.8) / this.tileSize), // 下部位置
       ];
-
-      // 如果不在地面上，也检测脚部位置
-      if (!this.isOnGround) {
-        checkPoints.push(Math.floor((this.y + this.h * 0.8) / this.tileSize)); // 下部位置
-      }
 
       // 任一位置有墙壁都不能移动
       canMove = !checkPoints.some((y) => {
@@ -747,6 +743,9 @@ export class Player extends Character {
       // 只在确实碰到墙壁时才设置isBlockOnFrount
       if (!canMove) {
         this.isBlockOnFrount = true;
+        // 重置水平速度，防止角色继续移动
+        this.vx = 0;
+        this.mx = 0;
       }
     }
 
