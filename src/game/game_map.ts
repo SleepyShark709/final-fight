@@ -87,7 +87,7 @@ export class GameTileMap {
         // 添加一些随机障碍物和平台(在非第一段地图中)
         if (repeat > 0 && tileValue === 0 && Math.random() < 0.05) {
           // 5%概率添加砖块
-          tileValue = Math.floor(Math.random() * 8) + 2; // 随机砖块类型
+          // tileValue = Math.floor(Math.random() * 8) + 2; // 随机砖块类型
         }
 
         this.tiles.push(tileValue);
@@ -210,6 +210,7 @@ export class GameTileMap {
     let belowTile = this.getTile(i, j + 1); // 下方
     let leftTile = this.getTile(i - 1, j); // 左侧
     let rightTile = this.getTile(i + 1, j); // 右侧
+    return true;
 
     // 增加调试日志
     console.log(

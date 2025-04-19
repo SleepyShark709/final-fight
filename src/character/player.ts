@@ -187,9 +187,9 @@ export class Player extends Character {
     let onTheGround = this.map.onTheGround(footX, footY);
 
     // 记录初始地面检测结果
-    console.log(
-      `地面检测: 位置(${footX}, ${footY}), 中心点检测=${onTheGround}`
-    );
+    // console.log(
+    //   `地面检测: 位置(${footX}, ${footY}), 中心点检测=${onTheGround}`
+    // );
 
     // 增加：检查左右脚位置，提高站在边缘时的稳定性
     // 当玩家站在砖块边缘时，防止掉落
@@ -204,9 +204,9 @@ export class Player extends Character {
       onTheGround = leftGroundCheck || rightGroundCheck;
 
       // 记录左右脚检测结果
-      console.log(
-        `左右脚检测: 左脚(${leftFootX}, ${footY})=${leftGroundCheck}, 右脚(${rightFootX}, ${footY})=${rightGroundCheck}`
-      );
+      // console.log(
+      //   `左右脚检测: 左脚(${leftFootX}, ${footY})=${leftGroundCheck}, 右脚(${rightFootX}, ${footY})=${rightGroundCheck}`
+      // );
     }
 
     // 检测上一帧是否已经在地面上
@@ -218,9 +218,9 @@ export class Player extends Character {
     this.isOnGround = onTheGround && this.vy >= -velocityThreshold;
 
     // 记录地面状态变化
-    console.log(
-      `地面状态: 上一帧=${wasOnGround}, 当前帧=${this.isOnGround}, vy=${this.vy}, jumpHitWall=${this.jumpHitWall}`
-    );
+    // console.log(
+    //   `地面状态: 上一帧=${wasOnGround}, 当前帧=${this.isOnGround}, vy=${this.vy}, jumpHitWall=${this.jumpHitWall}`
+    // );
 
     if (this.isOnGround) {
       // 在地面上时，停止下落并重置状态
@@ -233,13 +233,13 @@ export class Player extends Character {
 
         // 修复：强制将垂直速度设为0，防止陷入地面
         this.vy = 0;
-        console.log(`落地调整位置: 从${oldY}到${this.y}, vy设为${this.vy}`);
+        // console.log(`落地调整位置: 从${oldY}到${this.y}, vy设为${this.vy}`);
       } else if (Math.abs(this.vy) < velocityThreshold) {
         // 修复：当速度接近0时也重置位置，确保角色正确站在地面上
         const oldY = this.y;
         this.y = footY * this.tileSize - this.h + this.footOffset;
         this.vy = 0;
-        console.log(`低速落地调整: 从${oldY}到${this.y}, vy从${this.vy}设为0`);
+        // console.log(`低速落地调整: 从${oldY}到${this.y}, vy从${this.vy}设为0`);
       }
 
       // 只有在之前不在地面而现在在地面时才重置跳跃状态
@@ -279,9 +279,6 @@ export class Player extends Character {
 
       // 继续应用重力加速度
       this.vy += this.gy * GRAVITATIONAL_ACCELERATION_PERCENT;
-      console.log(
-        `空中状态: y位置从${oldY}到${this.y}, 速度从${oldVy}到${this.vy}`
-      );
 
       // 在上升过程中，检查是否已经越过墙壁顶部，如果是，重置jumpHitWall
       if (this.isJump && this.jumpHitWall && this.vy < 0) {
@@ -314,13 +311,13 @@ export class Player extends Character {
         this.isBlockOnFrount = false;
         this.jumpHitWall = false;
 
-        console.log(
-          `碰到世界底部: 重置位置到${this.y}, isJump=${this.isJump}, isOnGround=${this.isOnGround}, isBlockOnFrount=${this.isBlockOnFrount}, jumpHitWall=${this.jumpHitWall}`
-        );
+        // console.log(
+        //   `碰到世界底部: 重置位置到${this.y}, isJump=${this.isJump}, isOnGround=${this.isOnGround}, isBlockOnFrount=${this.isBlockOnFrount}, jumpHitWall=${this.jumpHitWall}`
+        // );
 
         if (this.frames === this.jumpFrames) {
           this.frames = this.idleFrame;
-          console.log(`碰到世界底部: 更改动画从跳跃帧到闲置帧`);
+          // console.log(`碰到世界底部: 更改动画从跳跃帧到闲置帧`);
         }
       }
     }
@@ -366,11 +363,11 @@ export class Player extends Character {
       checkPoints.push(Math.floor((this.y + this.h * 0.7) / this.tileSize)); // 下部位置
     }
 
-    console.log(
-      `水平碰撞检测点: [${checkPoints.join(", ")}], isOnGround=${
-        this.isOnGround
-      }`
-    );
+    // console.log(
+    //   `水平碰撞检测点: [${checkPoints.join(", ")}], isOnGround=${
+    //     this.isOnGround
+    //   }`
+    // );
 
     // 检查左右是否有墙壁（任一高度位置）
     const leftWall = checkPoints.some((y) => {
@@ -470,9 +467,9 @@ export class Player extends Character {
     this.HPBar.y = this.y - 20;
 
     // 记录更新开始时的状态
-    console.log(
-      `更新开始: isJump=${this.isJump}, isOnGround=${this.isOnGround}, isMoving=${this.isMoving}`
-    );
+    // console.log(
+    //   `更新开始: isJump=${this.isJump}, isOnGround=${this.isOnGround}, isMoving=${this.isMoving}`
+    // );
 
     // 摩擦力系统
     // 更新 x 加速和受力
@@ -541,9 +538,9 @@ export class Player extends Character {
     this.isMoving = false;
 
     // 记录更新结束时的状态
-    console.log(
-      `更新结束: isJump=${this.isJump}, isOnGround=${this.isOnGround}, isMoving从${oldMovingState}变为${this.isMoving}`
-    );
+    // console.log(
+    //   `更新结束: isJump=${this.isJump}, isOnGround=${this.isOnGround}, isMoving从${oldMovingState}变为${this.isMoving}`
+    // );
   }
   attack(enemy: Enemy) {
     let ATTACK_FRAMES_MAP: { [key: number]: HTMLImageElement[] } = {
@@ -706,10 +703,7 @@ export class Player extends Character {
     this.isMoving = true;
 
     // 如果玩家正在向上跳跃接近墙壁顶部，或者没有碰到墙，就允许移动
-    if (
-      (canMove && !this.isBlockOnFrount && !this.jumpHitWall) ||
-      nearWallTop
-    ) {
+    if ((canMove && !this.jumpHitWall) || nearWallTop) {
       console.log("执行移动");
       super.move(x);
       // 摩擦力系统
