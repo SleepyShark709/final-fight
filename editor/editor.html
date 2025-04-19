@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>map editor </title>
@@ -11,32 +12,35 @@
         .inline-block {
             display: inline-block;
         }
+
         .tile-image {
             width: 32px;
             height: 32px;
         }
+
         * {
-            margin: 0 ;
+            margin: 0;
         }
     </style>
 </head>
-<body>
-<canvas data-action="drawTile" id="id-canvas" width="1024" height="512"></canvas>
 
-<div class="inline-block">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t1.png" data-id="1" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t2.png" data-id="2" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t3.png" data-id="3" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t4.png" data-id="4" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t5.png" data-id="5" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t6.png" data-id="6" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t7.png" data-id="7" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t8.png" data-id="8" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t9.png" data-id="9" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t10.png" data-id="10" alt="">
-    <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t11.png" data-id="11" alt="">
-    <button id="id-button">获取json</button>
-</div>
+<body>
+    <canvas data-action="drawTile" id="id-canvas" width="1024" height="512"></canvas>
+
+    <div class="inline-block">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t1.png" data-id="1" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t2.png" data-id="2" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t3.png" data-id="3" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t4.png" data-id="4" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t5.png" data-id="5" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t6.png" data-id="6" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t7.png" data-id="7" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t8.png" data-id="8" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t9.png" data-id="9" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t10.png" data-id="10" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t11.png" data-id="11" alt="">
+        <button id="id-button">获取json</button>
+    </div>
     <script>
         const log = console.log.bind(console)
         const e = sel => document.querySelector(sel)
@@ -183,4 +187,5 @@
         __main()
     </script>
 </body>
+
 </html>
