@@ -1,3 +1,6 @@
 .idea/
 演示文件/
 node_modules/
+# 不添加所有 dist 文件下的内容
+dist/*
+

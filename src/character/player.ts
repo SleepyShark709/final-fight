@@ -228,7 +228,6 @@ export class Player extends Character {
         // 只有当正在下落时才调整位置
         // 将角色精确放置在地形上方，不留间隙
         // 使用footOffset调整角色位置，让角色视觉上正好站在地面上
-        const oldY = this.y;
         this.y = footY * this.tileSize - this.h + this.footOffset;
 
         // 修复：强制将垂直速度设为0，防止陷入地面
@@ -236,7 +235,6 @@ export class Player extends Character {
         // console.log(`落地调整位置: 从${oldY}到${this.y}, vy设为${this.vy}`);
       } else if (Math.abs(this.vy) < velocityThreshold) {
         // 修复：当速度接近0时也重置位置，确保角色正确站在地面上
-        const oldY = this.y;
         this.y = footY * this.tileSize - this.h + this.footOffset;
         this.vy = 0;
         // console.log(`低速落地调整: 从${oldY}到${this.y}, vy从${this.vy}设为0`);
@@ -263,8 +261,6 @@ export class Player extends Character {
       }
     } else {
       // 不在地面上，应用重力
-      const oldY = this.y;
-      const oldVy = this.vy;
 
       // 修复：应用位移前检查垂直速度是否足够大
       // 如果速度太小，可能导致因浮点数精度问题而导致角色抖动
@@ -534,7 +530,6 @@ export class Player extends Character {
     this.texture = this.frames[this.frameCount];
 
     // 设置当前为非移动状态
-    const oldMovingState = this.isMoving;
     this.isMoving = false;
 
     // 记录更新结束时的状态

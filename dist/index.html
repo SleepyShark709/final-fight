@@ -18,6 +18,12 @@
             margin: 0;
         }
 
+        .game-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         #id-canvas {
             /*border: black 1px solid;*/
         }
@@ -26,16 +32,21 @@
             display: inline-block;
         }
     </style>
-  <script type="module" crossorigin src="/assets/main-CHNTq3b4.js"></script>
+  <script type="module" crossorigin src="/final-fight/assets/main-CjGJwzsg.js"></script>
 </head>
 
 <body>
-    <div class="zhen">帧率（60）</div>
-    <input id="id-input-speed" type="range" min="1" max="120" value="60">
-    <canvas id="id-canvas" width="1024" height="512"></canvas>
+    <div class="game-container">
+        <canvas id="id-canvas" width="1024" height="512"></canvas>
+    </div>
+
+
 
     <hr>
-    <div class="game-controls"></div>
+    <div class="game-controls">
+        <div class="fps zhen">帧率(30)</div>
+        <input id="id-input-speed" type="range" min="1" max="120" value="60">
+    </div>
     <script>
         let canvas = document.querySelector('#id-canvas')
         let body = document.querySelector('body')

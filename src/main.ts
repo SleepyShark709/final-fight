@@ -4,6 +4,8 @@ import { SceneTitle } from "./scene/title/scene-title";
 import { EnemyImages } from "./utils/enemy-utils";
 import { MapImages } from "./utils/map-util";
 import { PlayerImages } from "./utils/player-util";
+import bgImage from "@/assets/background/bg.png";
+import startbgImage from "@/assets/background/startbg.png";
 
 const main = () => {
   // 这个地方是加了一个滑动条来控制帧率
@@ -22,9 +24,16 @@ const main = () => {
   }
 
   var images: { [key: string]: string } = {
-    bg: "image/bg.png",
-    startbg: "image/startbg.png",
+    bg: bgImage,
+    startbg: startbgImage,
   };
+
+  // LogGroup: default
+  console.log(
+    "【20:15:59】【src/main.ts】【行号32】😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+    startbgImage,
+    bgImage
+  );
   let playerImages = new PlayerImages().images;
   let enemyImages = new EnemyImages().images;
   let mapImages = new MapImages().images;
