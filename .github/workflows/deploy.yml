@@ -22,6 +22,12 @@ jobs:
       - name: Build
         run: yarn build
 
+      - name: Debug - List dist directory
+        run: ls -la dist
+
+      - name: Debug - Check index.html
+        run: cat dist/index.html
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
