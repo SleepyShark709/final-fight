@@ -26,6 +26,11 @@
 
         #id-canvas {
             /*border: black 1px solid;*/
+            /* 确保像素完美渲染，避免瓦片间出现细线 */
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
         }
 
         .inline-block {

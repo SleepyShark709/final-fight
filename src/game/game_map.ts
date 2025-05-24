@@ -149,18 +149,18 @@ export class GameTileMap {
     // 最大偏移（最右边）：-(地图宽度 - 画布宽度)
     const maxOffsetX = -(this.mapWidth - this.game.canvasWidth);
 
-    // 应用地图偏移（考虑边界）
+    // 应用地图偏移（考虑边界），确保偏移值为整数以避免像素模糊
     if (idealOffsetX > 0) {
       // 到达地图左边界
       this.offsetX = 0;
       this.reachedLeftBoundary = true;
     } else if (idealOffsetX < maxOffsetX) {
       // 到达地图右边界
-      this.offsetX = maxOffsetX;
+      this.offsetX = Math.floor(maxOffsetX);
       this.reachedRightBoundary = true;
     } else {
       // 正常滚动区域
-      this.offsetX = idealOffsetX;
+      this.offsetX = Math.floor(idealOffsetX);
       this.reachedLeftBoundary = false;
       this.reachedRightBoundary = false;
     }
@@ -295,8 +295,9 @@ export class GameTileMap {
         let tile = this.tiles[index];
 
         if (tile !== 0) {
-          let x = i * this.tileSize + this.offsetX;
-          let y = j * this.tileSize;
+          // 确保坐标为整数以避免像素模糊和细线问题
+          let x = Math.floor(i * this.tileSize + this.offsetX);
+          let y = Math.floor(j * this.tileSize);
 
           // 绘制瓦片图像
           let image = this.tileImages[tile - 1];

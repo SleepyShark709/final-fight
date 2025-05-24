@@ -23,6 +23,14 @@ export class Game {
     this.keydowns = {};
     this.canvas = document.querySelector("#id-canvas") as HTMLCanvasElement;
     this.context = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+
+    // 设置像素完美渲染 - 关闭图像平滑以避免砖块间出现细线
+    this.context.imageSmoothingEnabled = false;
+    // 确保Canvas使用清晰的像素渲染（使用类型断言处理浏览器兼容性）
+    (this.context as any).webkitImageSmoothingEnabled = false;
+    (this.context as any).mozImageSmoothingEnabled = false;
+    (this.context as any).msImageSmoothingEnabled = false;
+
     this.canvasWidth = this.canvas.clientWidth;
     this.canvasHeight = this.canvas.clientHeight;
     this.keyStatus = "up";

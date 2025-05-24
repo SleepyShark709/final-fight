@@ -82,7 +82,7 @@ export class Character {
 
     // 如果角色有地图引用且地图有偏移功能，应用地图偏移
     if (this.map && this.map.offsetX !== undefined) {
-      screenX = this.x + this.map.offsetX;
+      screenX = Math.floor(this.x + this.map.offsetX);
     }
 
     context.translate(screenX + w2, screenY + h2);
