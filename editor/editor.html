@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>map editor </title>
+    <style>
+        #id-canvas {
+            outline: dashed lightskyblue 1px;
+        }
+
+        .inline-block {
+            display: inline-block;
+        }
+
+        .tile-image {
+            width: 32px;
+            height: 32px;
+        }
+
+        * {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas data-action="drawTile" id="id-canvas" width="1024" height="512"></canvas>
+
+    <div class="inline-block">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t1.png" data-id="1" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t2.png" data-id="2" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t3.png" data-id="3" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t4.png" data-id="4" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t5.png" data-id="5" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t6.png" data-id="6" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t7.png" data-id="7" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t8.png" data-id="8" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t9.png" data-id="9" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t10.png" data-id="10" alt="">
+        <img class="tile-image" data-action="change_active_tile" src="/image/map/grass/t11.png" data-id="11" alt="">
+        <button id="id-button">获取json</button>
+        <button id="id-delete-mode">删除模式(关闭)</button>
+    </div>
+    <script>
+        const log = console.log.bind(console)
+        const e = sel => document.querySelector(sel)
+
+        const actions = {
+            change_active_tile(event) {
+                let id = Number(event.target.dataset.id)
+
+                window.activeTile = event.target
+            },
+            drawTile(event) {
+                if (window.deleteMode) return
+                let target = event.target
+                let rect = target.getBoundingClientRect()
+                let x = event.clientX - rect.left
+                let y = event.clientY - rect.top
+                let tileSize = 32
+                let i = Math.floor(x / tileSize)
+                let j = Math.floor(y / tileSize)
+                let x1 = i * tileSize
+                let y1 = j * tileSize
+                window.context.fillRect(x1, y1, tileSize, tileSize)
+                window.context.drawImage(window.activeTile, x1, y1, tileSize, tileSize)
+            }
+        }
+
+        const tilePosition = (x, y) => {
+            window.tileSize = 32
+            let i = Math.floor(x / window.tileSize)
+            let j = Math.floor(y / window.tileSize)
+            let x1 = i * window.tileSize
+            let y1 = j * window.tileSize
+            return [x1, y1]
+        }
+
+        const drawTileAt = (x, y) => {
+            if (window.deleteMode) return
+            let [x1, y1] = tilePosition(x, y)
+            window.context.fillRect(x1, y1, window.tileSize, window.tileSize)
+            window.context.drawImage(window.activeTile, x1, y1, window.tileSize, window.tileSize)
+            let tile = window.activeTile.dataset.id
+            let mx = x1 / tileSize
+            let my = y1 / tileSize
+            window.map.setTile(my, mx, tile)
+        }
+
+        const deleteTileEvent = (event) => {
+            let target = event.target
+            let rect = target.getBoundingClientRect()
+            let x = event.clientX - rect.left
+            let y = event.clientY - rect.top
+            let [x1, y1] = tilePosition(x, y)
+            window.context.fillRect(x1, y1, tileSize, tileSize)
+            let mx = x1 / tileSize
+            let my = y1 / tileSize
+            window.map.deleteTile(mx, my)
+        }
+
+        const bindEvent = () => {
+            e('#id-button').addEventListener('click', () => {
+                window.map.getJsonFile()
+            })
+            e('body').addEventListener('click', () => {
+                let action = event.target.dataset.action
+                console.log('actions[action](event)', actions[action], window.deleteMode)
+                actions[action] && actions[action](event) && !window.deleteMode
+            })
+            e('body').addEventListener('dblclick', (event) => {
+                deleteTileEvent(event)
+            })
+            e('#id-delete-mode').addEventListener('click', () => {
+                window.deleteMode = !window.deleteMode
+                if (window.deleteMode) {
+                    e('#id-delete-mode').textContent = '删除模式(开启)'
+                } else {
+                    e('#id-delete-mode').textContent = '删除模式(关闭)'
+                }
+            })
+            let moving = false
+            let canDelte = false // 能否进行删除
+
+            window.canvas.addEventListener('mousedown', (event) => {
+                moving = true
+                canDelte = true
+                if (!window.deleteMode) {
+                    let x = event.clientX
+                    let y = event.clientY
+                    drawTileAt(x, y)
+                }
+            })
+
+            window.canvas.addEventListener('mousemove', (event) => {
+                if (moving && !window.deleteMode) {
+                    console.log('移动')
+                    let x = event.clientX
+                    let y = event.clientY
+                    drawTileAt(x, y)
+                } else if (canDelte && window.deleteMode === true) {
+                    deleteTileEvent(event)
+                }
+
+            })
+
+            window.canvas.addEventListener('mouseup', (event) => {
+                moving = false
+                canDelte = false
+            })
+        }
+
+        const init = () => {
+            window.map = new Map()
+            window.active_tile_id = null
+            window.canvas = e('canvas')
+            window.context = window.canvas.getContext('2d')
+            window.context.fillStyle = '#ffffff'
+
+        }
+
+
+
+        class Map {
+            constructor() {
+                this.height = 16
+                this.width = 32
+                this.tiles = []
+                this.setupTiles()
+            }
+            setupTiles() {
+                let s = this.height * this.width
+                for (let i = 0; i < s; i++) {
+                    this.tiles[i] = 0
+                }
+            }
+            setTile(i, j, tile) {
+                let index = j * this.height + i
+                this.tiles[index] = Number(tile)
+            }
+            deleteTile(i, j) {
+                let index = j * this.height + i
+                this.tiles[index] = Number(0)
+            }
+
+            beautifyJson(arr) {
+                let text = arr.join(',')
+                let result = ''
+                for (let i = 0; i < text.length; i++) {
+                    if (i % 32 === 0 && i !== 0) {
+                        result += '\n'
+                    }
+                    result += text[i]
+                }
+                log(result)
+            }
+
+            getJsonFile() {
+                this.beautifyJson(this.tiles)
+                log('data\n', JSON.stringify(this.tiles))
+            }
+        }
+
+        const __main = () => {
+            init()
+            bindEvent()
+        }
+
+        __main()
+    </script>
+</body>
+
+</html>
