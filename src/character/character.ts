@@ -2,9 +2,10 @@ import { COOL_DOWN } from "@/constants";
 import { Game } from "@/game/game";
 import { GameImage } from "@/game/game_image";
 import { GameTileMap } from "@/game/game_map";
+import { ICharacter } from '@/types/index';
 
 // 角色
-export class Character {
+export class Character implements ICharacter {
   game: Game;
   frames: HTMLImageElement[];
   runFrames: HTMLImageElement[];
@@ -20,7 +21,7 @@ export class Character {
   map: GameTileMap;
   isBlockOnFrount: boolean;
   idleFrame: HTMLImageElement[];
-  texture: any;
+  texture?: HTMLImageElement | null;
   w: number;
   h: number;
   x: number;
@@ -67,8 +68,8 @@ export class Character {
       this.frames = this.idleFrame;
     }
     this.isMoving = false;
-    this.w = this.texture.width; // 图片宽
-    this.h = this.texture.height; // 图片高
+    this.w = this.texture ? this.texture.width : 0; // 图片宽
+    this.h = this.texture ? this.texture.height : 0; // 图片高
   }
   draw() {
     let context = this.game.context;

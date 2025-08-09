@@ -1,8 +1,9 @@
 import { Game } from "./game";
+import { IGameScene, IGameElement } from '@/types/index';
 
-export class GameScene {
+export class GameScene implements IGameScene {
   game: Game;
-  elements: any[];
+  elements: IGameElement[];
   constructor(game: Game) {
     this.game = game;
     this.elements = [];
@@ -11,14 +12,14 @@ export class GameScene {
     var i = new this(game);
     return i;
   }
-  addElement(img: any) {
+  addElement(img: IGameElement) {
     img.scene = this;
     this.elements.push(img);
   }
   popElement() {
     this.elements.pop();
   }
-  deleteElement(element: any) {
+  deleteElement(element: IGameElement) {
     // 找到要删除的类
     let index = this.elements.indexOf(element);
     if (index > 0) {

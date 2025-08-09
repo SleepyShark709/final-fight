@@ -16,13 +16,13 @@ export class Scene extends GameScene {
     // 背景图片偏移系数（视差效果）- 0.5表示背景移动速度是地图的一半
     parallaxFactor: number;
     // 绘制背景
-    draw: (context: any, map: any) => void;
+    draw: (context: CanvasRenderingContext2D, map: GameTileMap) => void;
   };
   player: Player;
-  enemy: any;
+  enemy: Enemy;
   damageCooldown: number;
   damageCooldownTime: number;
-  debugModule: any;
+  debugModule: DebugModule;
   constructor(game: Game) {
     super(game);
 
@@ -61,7 +61,7 @@ export class Scene extends GameScene {
       },
     };
 
-    // 添加地图到场景
+    // 地图作为场景的属性，不需要添加到元素列表中
     this.addElement(map);
 
     // 创建玩家
@@ -227,10 +227,6 @@ export class Scene extends GameScene {
       if (keyStatus === "down" && !debugToggled) {
         debugToggled = true;
         this.debugModule.enabled = !this.debugModule.enabled;
-        console.log(
-          "调试信息显示:",
-          this.debugModule.enabled ? "开启" : "关闭"
-        );
       } else if (keyStatus === "up") {
         debugToggled = false;
       }
@@ -241,7 +237,6 @@ export class Scene extends GameScene {
       if (keyStatus === "down") {
         // 手动向左滚动地图
         this.map.offsetX += 10;
-        console.log("手动向左滚动地图:", this.map.offsetX);
       }
     });
 
@@ -249,7 +244,6 @@ export class Scene extends GameScene {
       if (keyStatus === "down") {
         // 手动向右滚动地图
         this.map.offsetX -= 10;
-        console.log("手动向右滚动地图:", this.map.offsetX);
       }
     });
 
@@ -260,7 +254,6 @@ export class Scene extends GameScene {
         this.player.x = 112;
         this.player.y = 100;
         this.map.offsetX = 0;
-        console.log("重置玩家位置和地图偏移");
       }
     });
   }

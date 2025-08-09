@@ -1,21 +1,25 @@
 import { FPS } from "./constants";
 import { Game } from "./game/game";
 import { SceneTitle } from "./scene/title/scene-title";
+import { LoadingScreen } from "./ui/loading-screen";
+import { getAllResources } from "./config/resources";
+
+// 保持向后兼容，继续导入legacy资源工具
 import { EnemyImages } from "./utils/enemy-utils";
 import { MapImages } from "./utils/map-util";
 import { PlayerImages } from "./utils/player-util";
 import bgImage from "@/assets/background/bg.png";
 import startbgImage from "@/assets/background/startbg.png";
 
-const main = () => {
+const main = async () => {
   // 这个地方是加了一个滑动条来控制帧率
-  let input: any = document.querySelector("#id-input-speed");
+  let input = document.querySelector("#id-input-speed") as HTMLInputElement;
   let zhen = document.querySelector(".zhen");
   let fps = FPS;
   if (input && zhen) {
-    input.value = FPS;
+    input.value = String(FPS);
     zhen.innerHTML = `帧率（${fps})`;
-    input.addEventListener("input", (event: InputEvent) => {
+    input.addEventListener("input", (event: Event) => {
       let input = event.target as HTMLInputElement;
       fps = Number(input?.value);
       zhen.innerHTML = `帧率（${fps})`;
@@ -28,12 +32,6 @@ const main = () => {
     startbg: startbgImage,
   };
 
-  // LogGroup: default
-  console.log(
-    "【20:15:59】【src/main.ts】【行号32】😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
-    startbgImage,
-    bgImage
-  );
   let playerImages = new PlayerImages().images;
   let enemyImages = new EnemyImages().images;
   let mapImages = new MapImages().images;
@@ -42,11 +40,45 @@ const main = () => {
   images = Object.assign(images, enemyImages);
   images = Object.assign(images, mapImages);
 
-  new Game(FPS, images, function (g: Game) {
-    // var s = SceneTitle.new(g)
+  // 创建游戏实例
+  const game = new Game(FPS, images, function (g: Game) {
     var s = SceneTitle.new(g);
     g.runWithScene(s);
   });
+  
+  // 创建加载屏幕
+  const loadingScreen = new LoadingScreen(game);
+  loadingScreen.show();
+  
+  // 设置资源管理器进度回调
+  const resourceManager = game.getResourceManager();
+  // let currentResourceName = ''; // 暂时注释掉未使用的变量
+  
+  resourceManager.onProgressUpdate = (progress, resourceName) => {
+    // currentResourceName = resourceName; // 暂时注释掉
+    loadingScreen.draw(progress, resourceName);
+    
+    if (progress.progress === 1) {
+      // 所有资源加载完成，隐藏加载屏幕
+      setTimeout(() => {
+        loadingScreen.hide();
+      }, 500); // 延迟500ms让用户看到100%完成
+    }
+  };
+  
+  resourceManager.onError = (error, resourceName) => {
+    loadingScreen.drawError(`Failed to load ${resourceName}: ${error.message}`);
+  };
+  
+  // 预加载现代资源管理系统的资源（可选）
+  try {
+    const modernResources = getAllResources();
+    if (modernResources.length > 0) {
+      await game.preloadResources();
+    }
+  } catch (error) {
+    console.warn('Modern resource preloading failed, falling back to legacy system:', error);
+  }
 };
 
 // 当页面加载完成后启动游戏

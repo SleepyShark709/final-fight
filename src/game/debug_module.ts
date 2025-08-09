@@ -445,7 +445,7 @@ export class DebugModule {
         map.player ? map.player.x + map.offsetX : 0
       )}`,
       `敌人位置X: ${Math.round(
-        map.game.scene.enemy ? map.game.scene.enemy.x : 0
+        (map.game.scene && map.game.scene.enemy) ? map.game.scene.enemy.x : 0
       )}`,
       `地图宽度: ${map.mapWidth}像素 (${map.tw}列)`,
       `画布宽度: ${map.game.canvasWidth}像素`,

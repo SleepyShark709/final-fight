@@ -27,7 +27,7 @@ export class Player extends Character {
   jumpFrames: HTMLImageElement[];
   frameCount: number;
   attackType: number;
-  gy: any;
+  gy: number;
   vy: number;
   isOnGround: boolean;
   vx: number;
@@ -36,7 +36,7 @@ export class Player extends Character {
   maxHP: number;
   currentHP: number;
   isDead: boolean;
-  HPBar: any;
+  HPBar: HpBar;
   footOffset: number;
   jumpHitWall: boolean;
   minVerticalDelta: number;
@@ -94,11 +94,10 @@ export class Player extends Character {
     // 新增：最小垂直位移量，防止角色因浮点数精度问题而抖动
     this.minVerticalDelta = 0.1;
   }
-  //@ts-ignore
-  static new(...args) {
-    //@ts-ignore
-    return new this(...args);
-  }
+  // 静态方法已移除，直接使用构造函数
+  // static new(game: Game, map: GameTileMap): Player {
+  //   return new this(game, map);
+  // }
   initIdleFrame(game: Game) {
     // 创建闲置时的 frame 数组，里面存放的是图片信息
     for (let i = 0; i < PLAYER_IDLE_IMAGE_NUMBER; i++) {
@@ -149,16 +148,12 @@ export class Player extends Character {
   jump(keyStatus: string) {
     // 只有人物在地面的时候才可以跳
     // if (this.y === 385) {
-    console.log(
-      `尝试跳跃: keyStatus=${keyStatus}, isJump=${this.isJump}, isOnGround=${this.isOnGround}, jumpHitWall=${this.jumpHitWall}`
-    );
 
     if (
       keyStatus === "down" &&
       this.isJump === false &&
       this.isOnGround === true
     ) {
-      console.log("跳跃开始");
 
       this.isJump = true;
       // 重要修复：开始跳跃时重置跳跃碰撞标志
@@ -171,9 +166,6 @@ export class Player extends Character {
       // 修复：设置角色不在地面上，防止在下一帧立即重新判断为在地面
       this.isOnGround = false;
 
-      console.log(
-        `跳跃状态设置: isJump=${this.isJump}, jumpHitWall=${this.jumpHitWall}, vy=${this.vy}, 当前y=${this.y}, isOnGround=${this.isOnGround}`
-      );
     }
 
     // }
@@ -187,9 +179,6 @@ export class Player extends Character {
     let onTheGround = this.map.onTheGround(footX, footY);
 
     // 记录初始地面检测结果
-    // console.log(
-    //   `地面检测: 位置(${footX}, ${footY}), 中心点检测=${onTheGround}`
-    // );
 
     // 增加：检查左右脚位置，提高站在边缘时的稳定性
     // 当玩家站在砖块边缘时，防止掉落
@@ -204,9 +193,6 @@ export class Player extends Character {
       onTheGround = leftGroundCheck || rightGroundCheck;
 
       // 记录左右脚检测结果
-      // console.log(
-      //   `左右脚检测: 左脚(${leftFootX}, ${footY})=${leftGroundCheck}, 右脚(${rightFootX}, ${footY})=${rightGroundCheck}`
-      // );
     }
 
     // 检测上一帧是否已经在地面上
@@ -218,9 +204,6 @@ export class Player extends Character {
     this.isOnGround = onTheGround && this.vy >= -velocityThreshold;
 
     // 记录地面状态变化
-    // console.log(
-    //   `地面状态: 上一帧=${wasOnGround}, 当前帧=${this.isOnGround}, vy=${this.vy}, jumpHitWall=${this.jumpHitWall}`
-    // );
 
     if (this.isOnGround) {
       // 在地面上时，停止下落并重置状态
@@ -232,31 +215,25 @@ export class Player extends Character {
 
         // 修复：强制将垂直速度设为0，防止陷入地面
         this.vy = 0;
-        // console.log(`落地调整位置: 从${oldY}到${this.y}, vy设为${this.vy}`);
       } else if (Math.abs(this.vy) < velocityThreshold) {
         // 修复：当速度接近0时也重置位置，确保角色正确站在地面上
         this.y = footY * this.tileSize - this.h + this.footOffset;
         this.vy = 0;
-        // console.log(`低速落地调整: 从${oldY}到${this.y}, vy从${this.vy}设为0`);
       }
 
       // 只有在之前不在地面而现在在地面时才重置跳跃状态
       if (!wasOnGround) {
-        const oldJumpState = this.isJump;
+        // const oldJumpState = this.isJump;
         this.isJump = false;
 
         // 重要修复：落地时重置所有阻碍移动的标志
         this.isBlockOnFrount = false;
         this.jumpHitWall = false;
 
-        console.log(
-          `落地重置状态: 从isJump=${oldJumpState}到${this.isJump}, isBlockOnFrount=${this.isBlockOnFrount}, jumpHitWall=${this.jumpHitWall}`
-        );
 
         // 如果是从跳跃状态落地，改变动画
         if (this.frames === this.jumpFrames) {
           this.frames = this.idleFrame;
-          console.log(`落地更改动画: 从跳跃帧到闲置帧`);
         }
       }
     } else {
@@ -289,9 +266,6 @@ export class Player extends Character {
         // 如果已经跳到墙壁顶部上方，取消墙壁碰撞标志
         if (!leftWall && !rightWall) {
           this.jumpHitWall = false;
-          console.log(
-            `已越过墙壁顶部: 重置jumpHitWall=false, 位置y=${this.y}, 网格y=${playerGridY}`
-          );
         }
       }
 
@@ -307,13 +281,9 @@ export class Player extends Character {
         this.isBlockOnFrount = false;
         this.jumpHitWall = false;
 
-        // console.log(
-        //   `碰到世界底部: 重置位置到${this.y}, isJump=${this.isJump}, isOnGround=${this.isOnGround}, isBlockOnFrount=${this.isBlockOnFrount}, jumpHitWall=${this.jumpHitWall}`
-        // );
 
         if (this.frames === this.jumpFrames) {
           this.frames = this.idleFrame;
-          // console.log(`碰到世界底部: 更改动画从跳跃帧到闲置帧`);
         }
       }
     }
@@ -327,14 +297,11 @@ export class Player extends Character {
 
       if (headBlock) {
         // 如果头顶有障碍物，停止上升
-        const oldVy = this.vy;
-        const oldY = this.y;
+        // const oldVy = this.vy;
+        // const oldY = this.y;
         this.vy = 0;
         // 稍微下移角色，防止卡在砖块中
         this.y = (headY + 1) * this.tileSize;
-        console.log(
-          `头顶碰撞: 位置(${headX}, ${headY}), vy从${oldVy}到${this.vy}, y从${oldY}到${this.y}`
-        );
       }
     }
   }
@@ -359,32 +326,17 @@ export class Player extends Character {
       checkPoints.push(Math.floor((this.y + this.h * 0.7) / this.tileSize)); // 下部位置
     }
 
-    // console.log(
-    //   `水平碰撞检测点: [${checkPoints.join(", ")}], isOnGround=${
-    //     this.isOnGround
-    //   }`
-    // );
 
     // 检查左右是否有墙壁（任一高度位置）
     const leftWall = checkPoints.some((y) => {
       const hasTile = this.map.onTheGround(leftCheckX, y);
       const isWall = hasTile && this.map.isTileWall(leftCheckX, y);
-      if (isWall) {
-        console.log(
-          `水平碰撞检测 - 左侧墙壁: 位置(${leftCheckX}, ${y}), isJump=${this.isJump}`
-        );
-      }
       return isWall;
     });
 
     const rightWall = checkPoints.some((y) => {
       const hasTile = this.map.onTheGround(rightCheckX, y);
       const isWall = hasTile && this.map.isTileWall(rightCheckX, y);
-      if (isWall) {
-        console.log(
-          `水平碰撞检测 - 右侧墙壁: 位置(${rightCheckX}, ${y}), isJump=${this.isJump}`
-        );
-      }
       return isWall;
     });
 
@@ -402,17 +354,11 @@ export class Player extends Character {
       if (leftWall && this.vx < 0) {
         // 检查左侧墙壁顶部是否有空间
         canJumpOver = !this.map.onTheGround(leftCheckX, wallTopY);
-        console.log(
-          `检查左侧墙壁顶部: 位置(${leftCheckX}, ${wallTopY}), 可越过=${canJumpOver}`
-        );
       }
 
       if (rightWall && this.vx > 0) {
         // 检查右侧墙壁顶部是否有空间
         canJumpOver = !this.map.onTheGround(rightCheckX, wallTopY);
-        console.log(
-          `检查右侧墙壁顶部: 位置(${rightCheckX}, ${wallTopY}), 可越过=${canJumpOver}`
-        );
       }
     }
 
@@ -422,9 +368,6 @@ export class Player extends Character {
       this.vx = 0;
       this.mx = 0;
       hasHorizontalCollision = true;
-      console.log(
-        `右侧碰撞响应: 停止移动, vx=${this.vx}, isJump=${this.isJump}, canJumpOver=${canJumpOver}`
-      );
     }
 
     if (leftWall && this.vx < 0) {
@@ -432,22 +375,15 @@ export class Player extends Character {
       this.vx = 0;
       this.mx = 0;
       hasHorizontalCollision = true;
-      console.log(
-        `左侧碰撞响应: 停止移动, vx=${this.vx}, isJump=${this.isJump}, canJumpOver=${canJumpOver}`
-      );
     }
 
     // 跳跃状态下的碰撞处理
     if (this.isJump) {
       if (hasHorizontalCollision && !canJumpOver) {
         this.jumpHitWall = true;
-        console.log(
-          `跳跃中碰撞: 设置jumpHitWall=true, canJumpOver=${canJumpOver}`
-        );
       } else if (canJumpOver) {
         // 如果可以越过墙壁顶部，不设置碰撞标志
         this.jumpHitWall = false;
-        console.log(`跳跃可越过墙壁: 设置jumpHitWall=false`);
       }
     } else if (!this.isJump && !hasHorizontalCollision) {
       this.jumpHitWall = false;
@@ -463,9 +399,6 @@ export class Player extends Character {
     this.HPBar.y = this.y - 20;
 
     // 记录更新开始时的状态
-    // console.log(
-    //   `更新开始: isJump=${this.isJump}, isOnGround=${this.isOnGround}, isMoving=${this.isMoving}`
-    // );
 
     // 摩擦力系统
     // 更新 x 加速和受力
@@ -533,9 +466,6 @@ export class Player extends Character {
     this.isMoving = false;
 
     // 记录更新结束时的状态
-    // console.log(
-    //   `更新结束: isJump=${this.isJump}, isOnGround=${this.isOnGround}, isMoving从${oldMovingState}变为${this.isMoving}`
-    // );
   }
   attack(enemy: Enemy) {
     let ATTACK_FRAMES_MAP: { [key: number]: HTMLImageElement[] } = {
@@ -559,11 +489,8 @@ export class Player extends Character {
       // 判断人物与敌人是否碰撞
       // this.x > enemy.x - 15 - this.w // 当玩家在敌人左侧 15 个像素点
       // enemy.x + enemy.w + 15 > this.x // 当玩家在敌人右侧 15 个像素点
-      // console.log('当玩家在敌人左侧 15 个像素点', this.x > enemy.x - 5 - this.w)
-      // console.log('当玩家在敌人右侧 15 个像素点', this.x < enemy.x + enemy.w + 5)
       // 逻辑是敌人和玩家的图片解除到的时候，其实肉眼看是没有接触到的（因为有空白部分），所以要让图片负接触一些，才是肉眼可见的打击到了
       if (this.x > enemy.x + 30 - this.w && this.x < enemy.x + enemy.w - 30) {
-        console.log("开始攻击");
         // 开始攻击, 删除敌人 TODO 这里应该在攻击动画播放结束的时候删除敌人,现在定时器是一种 hack 的方案。不应该这么做
         setTimeout(() => {
           // 暂时设置伤害值是 30-50 间的随机数
@@ -579,9 +506,6 @@ export class Player extends Character {
     let canMove = true;
 
     // 添加日志，记录移动开始前的状态
-    console.log(
-      `移动前状态: isJump=${this.isJump}, isOnGround=${this.isOnGround}, isMoving=${this.isMoving}, isBlockOnFrount=${this.isBlockOnFrount}, jumpHitWall=${this.jumpHitWall}, x=${this.x}, y=${this.y}`
-    );
 
     // 重要修复：如果玩家在地面上，确保isBlockOnFrount和jumpHitWall标志不会错误地阻止移动
     if (this.isOnGround && !this.isJump) {
@@ -606,11 +530,6 @@ export class Player extends Character {
 
         // 如果当前位置没有墙但下方有墙，说明可能正好在墙壁顶部
         nearWallTop = !hasWallCurrent && hasWallBelow;
-        if (nearWallTop) {
-          console.log(
-            `检测到左侧墙壁顶部: 位置(${leftCheckX}, ${playerTopY}), 当前=${hasWallCurrent}, 下方=${hasWallBelow}`
-          );
-        }
       } else {
         // 向右移动
         const rightCheckX = centerX + 1;
@@ -620,11 +539,6 @@ export class Player extends Character {
 
         // 如果当前位置没有墙但下方有墙，说明可能正好在墙壁顶部
         nearWallTop = !hasWallCurrent && hasWallBelow;
-        if (nearWallTop) {
-          console.log(
-            `检测到右侧墙壁顶部: 位置(${rightCheckX}, ${playerTopY}), 当前=${hasWallCurrent}, 下方=${hasWallBelow}`
-          );
-        }
       }
     }
 
@@ -646,11 +560,6 @@ export class Player extends Character {
         const hasTile = this.map.onTheGround(leftCheckX, y);
         const isWall = hasTile && this.map.isTileWall(leftCheckX, y);
         // 记录碰撞检测结果
-        if (isWall) {
-          console.log(
-            `左侧墙壁碰撞: 位置(${leftCheckX}, ${y}), hasTile=${hasTile}, isWall=${isWall}`
-          );
-        }
         return isWall;
       });
 
@@ -673,20 +582,12 @@ export class Player extends Character {
         const hasTile = this.map.onTheGround(rightCheckX, y);
         const isWall = hasTile && this.map.isTileWall(rightCheckX, y);
         // 记录碰撞检测结果
-        if (isWall) {
-          console.log(
-            `右侧墙壁碰撞: 位置(${rightCheckX}, ${y}), hasTile=${hasTile}, isWall=${isWall}`
-          );
-        }
         return isWall;
       });
 
       this.movingDirection = "right";
     }
 
-    console.log(
-      `移动检测结果: canMove=${canMove}, isBlockOnFrount=${this.isBlockOnFrount}, jumpHitWall=${this.jumpHitWall}, nearWallTop=${nearWallTop}`
-    );
 
     // 设置方向 - 始终更新方向，无论是否碰墙
     this.flipX =
@@ -699,7 +600,6 @@ export class Player extends Character {
 
     // 如果玩家正在向上跳跃接近墙壁顶部，或者没有碰到墙，就允许移动
     if ((canMove && !this.jumpHitWall) || nearWallTop) {
-      console.log("执行移动");
       super.move(x);
       // 摩擦力系统
       let speed = 0.3 * x;
@@ -710,20 +610,8 @@ export class Player extends Character {
       if (nearWallTop) {
         this.isBlockOnFrount = false;
         this.jumpHitWall = false;
-        console.log(
-          `靠近墙壁顶部: 重置碰撞标志 isBlockOnFrount=false, jumpHitWall=false`
-        );
       }
     } else {
-      console.log(
-        `无法移动: 原因=${
-          !canMove
-            ? "当前碰墙"
-            : this.isBlockOnFrount
-            ? "前方有障碍"
-            : "跳跃中碰墙"
-        }`
-      );
       // 即使不能移动，也设置奔跑动画
       if (this.isJump === false && this.isAttack === false) {
         this.frames = this.runFrames;
@@ -739,9 +627,6 @@ export class Player extends Character {
     }
 
     // 记录移动后的状态
-    console.log(
-      `移动后状态: isJump=${this.isJump}, isOnGround=${this.isOnGround}, isMoving=${this.isMoving}, isBlockOnFrount=${this.isBlockOnFrount}, jumpHitWall=${this.jumpHitWall}, canMove=${canMove}`
-    );
 
     // 返回是否成功移动
     return (

@@ -23,7 +23,7 @@ class SceneTitle extends GameScene {
     });
   }
 
-  static new(game: any) {
+  static new(game: Game): SceneTitle {
     return new this(game);
   }
 }

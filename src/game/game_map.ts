@@ -4,6 +4,12 @@ import { GameImage } from "./game_image";
 
 export class GameTileMap {
   game: Game;
+  // IGameElement 接口要求的属性
+  x: number = 0;
+  y: number = 0;
+  w: number = 0;
+  h: number = 0;
+  // 地图系统属性
   cameraX: number;
   cameraWidth: number;
   cameraHeight: number;
@@ -18,7 +24,7 @@ export class GameTileMap {
   th: number;
   tiles: number[];
   tw: number;
-  tileImages: any[];
+  tileImages: GameImage[];
   tileSize: number;
   constructor(game: Game) {
     this.game = game;
@@ -114,13 +120,14 @@ export class GameTileMap {
 
     // 计算地图总宽度(像素)
     this.mapWidth = this.tw * this.tileSize;
-    console.log("扩展后的地图宽度(像素):", this.mapWidth);
+    
+    // 设置IGameElement接口要求的尺寸
+    this.w = this.mapWidth;
+    this.h = this.th * this.tileSize;
   }
 
-  //@ts-ignore
-  static new(...args) {
-    //@ts-ignore
-    return new this(...args);
+  static new(game: Game): GameTileMap {
+    return new this(game);
   }
 
   // 设置要跟随的玩家对象
@@ -135,7 +142,7 @@ export class GameTileMap {
     }
 
     // 记录调试信息
-    const originalPlayerX = this.player.x;
+    // const originalPlayerX = this.player.x;
 
     // 简化逻辑：将摄像机位置简单地固定在画布宽度的1/3处
     // 这样玩家可以看到更多前方的场景
@@ -167,14 +174,6 @@ export class GameTileMap {
 
     // 调试信息
     if (this.game.frameCount % 60 === 0) {
-      console.log("摄像机跟随:", {
-        玩家位置: originalPlayerX,
-        固定位置: cameraFixedX,
-        理想偏移: idealOffsetX,
-        实际偏移: this.offsetX,
-        左边界: this.reachedLeftBoundary,
-        右边界: this.reachedRightBoundary,
-      });
     }
 
     // 更新摄像机位置用于调试显示
@@ -212,21 +211,14 @@ export class GameTileMap {
     let rightTile = this.getTile(i + 1, j); // 右侧
     return true;
 
-    // 增加调试日志
-    console.log(
-      `墙壁检测: 位置(${i}, ${j}), 上=${aboveTile}, 下=${belowTile}, 左=${leftTile}, 右=${rightTile}`
-    );
-
     // 改进的墙壁判定逻辑:
     // 1. 如果砖块的下方是空的，这很可能是平台/地面的边缘，不是墙壁
     if (belowTile === 0 || belowTile === undefined) {
-      console.log(`位置(${i}, ${j})不是墙壁: 下方为空`);
       return false;
     }
 
-    // 2. 如果上方是空的，而下方不是空的，这是正常的地面，不是墙壁
+    // 2. 如枟上方是空的，而下方不是空的，这是正常的地面，不是墙壁
     if ((aboveTile === 0 || aboveTile === undefined) && belowTile !== 0) {
-      console.log(`位置(${i}, ${j})不是墙壁: 符合地面特征`);
       return false;
     }
 
@@ -238,7 +230,6 @@ export class GameTileMap {
       rightTile !== undefined &&
       (aboveTile === 0 || aboveTile === undefined)
     ) {
-      console.log(`位置(${i}, ${j})不是墙壁: 左右连续地面`);
       return false;
     }
 
@@ -247,7 +238,6 @@ export class GameTileMap {
       (aboveTile !== 0 && aboveTile !== undefined) ||
       (leftTile !== 0 && rightTile !== 0);
 
-    console.log(`位置(${i}, ${j})${isWall ? "是" : "不是"}墙壁`);
     return isWall;
   }
 
@@ -301,13 +291,22 @@ export class GameTileMap {
 
           // 绘制瓦片图像
           let image = this.tileImages[tile - 1];
-          this.game.context.drawImage(
-            image.texture,
-            x,
-            y,
-            this.tileSize,
-            this.tileSize
-          );
+          if (image && image.texture) {
+            let texture = image.texture;
+            if (typeof texture === 'string') {
+              // 如果texture是字符串，尝试从游戏中获取HTMLImageElement
+              texture = this.game.textureByName(texture as string);
+            }
+            if (texture && typeof texture !== 'string') {
+              this.game.context.drawImage(
+                texture as HTMLImageElement,
+                x,
+                y,
+                this.tileSize,
+                this.tileSize
+              );
+            }
+          }
         }
       }
     }

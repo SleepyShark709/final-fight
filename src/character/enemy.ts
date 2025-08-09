@@ -140,7 +140,6 @@ export class Enemy extends Character {
   }
   // 被攻击到的事件
   killEvent(damageValue: number) {
-    console.log("受到伤害");
     // damageValue 是伤害值
     if (this.isDead === false) {
       this.HP -= damageValue; // 掉血
@@ -156,7 +155,6 @@ export class Enemy extends Character {
   }
   attackEvent() {
     if (this.cooldown === 0 && this.isDie === false) {
-      console.log("enemy attack");
       this.cooldown = ENEMY_COOL_DOWN; // 设置冷却为10帧
       this.frames = this.attack1Frames; // 设置攻击的 frame
       this.isAttack = true;

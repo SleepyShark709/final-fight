@@ -1,7 +1,13 @@
-export class Game {
+import { IGame, IGameScene, IGameImage, GameRunCallback, LoadProgress } from '@/types/index';
+import { ResourceManager } from '@/core/resource-manager';
+import { getAllResources } from '@/config/resources';
+import { gameErrorHandler, reportGameError } from '@/core/error-handler';
+import { performanceMonitor } from '@/core/performance-monitor';
+
+export class Game implements IGame {
   images: { [key: string]: HTMLImageElement | string };
-  runCallback: (g: any) => void;
-  scene: any;
+  runCallback: GameRunCallback;
+  scene: IGameScene | null;
   actions: { [key: string]: () => void };
   keydowns: { [key: string]: boolean };
   canvas: HTMLCanvasElement;
@@ -10,10 +16,12 @@ export class Game {
   canvasHeight: number;
   keyStatus: "up" | "down";
   frameCount: number;
+  private resourceManager: ResourceManager;
+  
   constructor(
     fps: number,
     images: { [key: string]: string | HTMLImageElement },
-    runCallback: (g: any) => void
+    runCallback: GameRunCallback
   ) {
     window.fps = fps;
     this.images = images;
@@ -43,13 +51,18 @@ export class Game {
       this.keydowns[event.key] = false;
       this.keyStatus = "up";
     });
+    this.resourceManager = new ResourceManager();
+    this.setupResourceManager();
+    this.setupErrorHandling();
+    this.setupPerformanceMonitoring();
     this.init();
   }
-  drawImage(Img: any, width: number, height: number) {
+  drawImage(Img: IGameImage, width: number, height: number) {
     //Img 是一个 GameImgae
     // LogGroup: default
-    Img.texture &&
-      this.context.drawImage(Img.texture, Img.x, Img.y, width, height);
+    if (Img.texture && typeof Img.texture !== 'string' && Img.x !== undefined && Img.y !== undefined) {
+      this.context.drawImage(Img.texture as HTMLImageElement, Img.x, Img.y, width, height);
+    }
   }
   update() {
     this.scene && this.scene.update();
@@ -57,8 +70,10 @@ export class Game {
   draw() {
     this.scene && this.scene.draw();
   }
-  deleteImage(element: any) {
-    this.scene.deleteElement(element);
+  deleteImage(element: IGameImage) {
+    if (this.scene) {
+      this.scene.deleteElement(element);
+    }
   }
   registerAction = (
     key: string,
@@ -67,60 +82,248 @@ export class Game {
     this.actions[key] = () => callback(this.keyStatus);
   };
   runLoop() {
-    let g = this;
-    var actions = Object.keys(g.actions);
-    for (let i = 0; i < actions.length; i++) {
-      var key = actions[i];
-      if (g.keydowns[key]) {
-        g.actions[key]();
+    // 帧开始性能监控
+    performanceMonitor.frameStart();
+    
+    try {
+      let g = this;
+      
+      // 输入处理
+      var actions = Object.keys(g.actions);
+      for (let i = 0; i < actions.length; i++) {
+        var key = actions[i];
+        if (g.keydowns[key]) {
+          g.actions[key]();
+        }
+      }
+
+      this.frameCount++;
+
+      // 更新逻辑性能监控
+      performanceMonitor.updateStart();
+      g.update();
+      performanceMonitor.updateEnd();
+
+      // 渲染性能监控
+      performanceMonitor.renderStart();
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      g.draw();
+      performanceMonitor.renderEnd();
+      
+    } catch (error: any) {
+      // 捕获游戏循环中的错误
+      reportGameError('runtime', 'Game loop error', error.message, {
+        frameCount: this.frameCount,
+        scene: this.scene?.constructor.name || 'unknown'
+      });
+      
+      // 尝试继续运行，除非是致命错误
+      if (error.name === 'FatalError') {
+        return;
       }
     }
-
-    this.frameCount++;
-
-    g.update();
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    g.draw();
+    
+    // 调度下一帧
     setTimeout(() => {
       window.requestAnimationFrame(this.runLoop.bind(this));
     }, 1000 / window.fps);
   }
-  textureByName(name: string) {
-    let g = this;
-    var img = g.images[name];
-    return img;
+  textureByName(name: string): HTMLImageElement | string {
+    // 优先从资源管理器获取
+    const image = this.resourceManager.getImage(name);
+    if (image) {
+      return image;
+    }
+    
+    // 回退到legacy方式
+    return this.images[name] || '';
   }
-  runWithScene(scene: any) {
+  
+  // 新增：获取资源管理器实例
+  getResourceManager(): ResourceManager {
+    return this.resourceManager;
+  }
+  
+  // 新增：预加载资源
+  async preloadResources(): Promise<void> {
+    const allResources = getAllResources();
+    await this.resourceManager.loadImages(allResources);
+  }
+  
+  // 新增：获取加载进度
+  getLoadProgress(): LoadProgress {
+    return this.resourceManager.getLoadProgress();
+  }
+  runWithScene(scene: IGameScene) {
     let g = this;
     g.scene = scene;
     setTimeout(() => {
       this.runLoop();
     }, 1000 / window.fps);
   }
-  replaceScene(scene: any) {
+  replaceScene(scene: IGameScene) {
     this.scene = scene;
   }
   __start() {
     this.runCallback(this);
   }
-  init = () => {
-    let g = this;
-    var loads = [];
-    var names = Object.keys(this.images);
-    for (let i = 0; i < names.length; i++) {
-      let name = names[i];
-      var path = this.images[name];
-      let img: HTMLImageElement = new Image();
-      img.src = path as unknown as string;
-      img.onload = function () {
-        //存入g.images中
-        g.images[name] = img;
-        // 所有图片都载入成功之后调用run
-        loads.push(1);
-        if (loads.length === names.length) {
-          g.__start();
+  
+  private setupResourceManager() {
+    // 设置加载进度回调
+    this.resourceManager.onProgressUpdate = (progress: LoadProgress) => {
+      // 可以在这里更新加载界面
+      if (progress.progress === 1) {
+        // 所有资源加载完成
+      }
+    };
+    
+    // 设置错误处理回调
+    this.resourceManager.onError = (error: Error, resourceName: string) => {
+      reportGameError('resource', `Resource loading failed: ${resourceName}`, error.message);
+    };
+  }
+  
+  private setupErrorHandling() {
+    // 设置错误处理回调
+    gameErrorHandler.onError = (error: any) => {
+      console.error('Game Error:', error);
+    };
+    
+    gameErrorHandler.onFatalError = (error: any) => {
+      console.error('Fatal Game Error:', error);
+      // 可以在这里显示错误页面或重启游戏
+      this.handleFatalError(error);
+    };
+    
+    // 添加资源恢复策略
+    gameErrorHandler.addRecoveryStrategy('game-resource', {
+      canRecover: (error: any) => error.type === 'resource' && !!this.resourceManager,
+      recover: async (_error: any) => {
+        try {
+          // 尝试重新初始化资源管理器
+          await this.resourceManager.cleanup();
+          return true;
+        } catch {
+          return false;
         }
-      };
+      },
+      fallback: (_error: any) => {
+        console.warn('Using fallback resources due to loading failure');
+        // 可以加载最小化的资源集
+      }
+    });
+  }
+  
+  private setupPerformanceMonitoring() {
+    // 设置性能警报回调
+    performanceMonitor.onAlert = (alert: any) => {
+      console.warn(`Performance Alert [${alert.type}]:`, alert.message);
+      
+      // 根据不同类型的性能问题采取相应措施
+      switch (alert.type) {
+        case 'fps_drop':
+          // 可以降低渲染质量或禁用某些效果
+          break;
+        case 'memory_high':
+          // 可以清理缓存或垃圾回收
+          this.performGarbageCollection();
+          break;
+        case 'render_slow':
+          // 可以简化渲染流程
+          break;
+        case 'update_slow':
+          // 可以优化游戏逻辑
+          break;
+      }
+    };
+    
+    performanceMonitor.onMetricsUpdate = (metrics: any) => {
+      // 可以在调试模式下显示性能指标
+      // if (process.env.NODE_ENV === 'development') { // 暂时注释掉，避免编译错误
+      if (true) { // 开发模式检查
+        // 每30秒输出一次性能报告
+        if (metrics.totalFrames % (30 * 60) === 0) {
+          console.log('Performance Report:', {
+            fps: metrics.fps.average.toFixed(1),
+            renderTime: metrics.renderTime.average.toFixed(2),
+            memoryUsage: `${(metrics.memory.percentage * 100).toFixed(1)}%`,
+            grade: performanceMonitor.getPerformanceGrade()
+          });
+        }
+      }
+    };
+  }
+  
+  private handleFatalError(error: any) {
+    // 尝试安全关闭游戏
+    try {
+      if (this.scene) {
+        // 停止当前场景
+        this.scene = null;
+      }
+      
+      // 清理资源
+      this.resourceManager?.cleanup();
+      
+      // 显示错误信息给用户
+      this.displayErrorScreen(error);
+    } catch (shutdownError) {
+      console.error('Error during game shutdown:', shutdownError);
+    }
+  }
+  
+  private displayErrorScreen(error: any) {
+    // 在canvas上绘制错误信息
+    this.context.fillStyle = '#000000';
+    this.context.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+    
+    this.context.fillStyle = '#ff4444';
+    this.context.font = 'bold 24px Arial';
+    this.context.textAlign = 'center';
+    this.context.fillText('Game Error Occurred', this.canvasWidth / 2, this.canvasHeight / 2 - 50);
+    
+    this.context.fillStyle = '#ffffff';
+    this.context.font = '16px Arial';
+    this.context.fillText('Please refresh the page to restart', this.canvasWidth / 2, this.canvasHeight / 2 + 20);
+    
+    if (error.message) {
+      this.context.font = '12px Arial';
+      this.context.fillStyle = '#cccccc';
+      this.context.fillText(error.message, this.canvasWidth / 2, this.canvasHeight / 2 + 50);
+    }
+  }
+  
+  private performGarbageCollection() {
+    // 强制垃圾回收（如果支持）
+    if ('gc' in window && typeof (window as any).gc === 'function') {
+      (window as any).gc();
+    }
+    
+    // 清理可能的内存泄漏
+    this.resourceManager?.cleanup();
+  }
+  
+  init = async () => {
+    try {
+      // 从传入的images对象创建资源列表
+      const legacyResources = Object.entries(this.images).map(([name, url]) => ({
+        name,
+        url: url as string
+      }));
+      
+      // 加载所有资源
+      const loadedImages = await this.resourceManager.loadImages(legacyResources);
+      
+      // 更新images对象
+      loadedImages.forEach((img, name) => {
+        this.images[name] = img;
+      });
+      
+      // 启动游戏
+      this.__start();
+    } catch (error) {
+      console.error('Failed to initialize game resources:', error);
+      // 可以显示错误页面或重试机制
     }
   };
 }

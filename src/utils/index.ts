@@ -5,7 +5,6 @@ interface Rect {
   h: number;
 }
 
-export const log = console.log.bind(console);
 
 export const imageFromPath = (path: string): HTMLImageElement => {
   const img = new Image();

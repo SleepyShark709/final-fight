@@ -1,12 +1,13 @@
 import { Game } from "./game";
+import { IGameImage } from '@/types/index';
 
-export class GameImage {
+export class GameImage implements IGameImage {
   game: Game;
   texture: string | HTMLImageElement;
-  x?: number;
-  y?: number;
-  w?: any;
-  h?: any;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
   constructor(
     game: Game,
     name: string,
