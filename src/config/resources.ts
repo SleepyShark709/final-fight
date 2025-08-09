@@ -95,20 +95,20 @@ export const GAME_RESOURCES: ImageResource[] = [
   // 背景资源 (高优先级预加载)
   { name: "bg", url: bgImage, preload: true },
   { name: "startbg", url: startbgImage, preload: true },
-  
+
   // 玩家闲置动画
   { name: "idle0", url: playerIdle0, preload: true },
   { name: "idle1", url: playerIdle1, preload: true },
   { name: "idle2", url: playerIdle2, preload: true },
-  
-  // 玩家持剑闲置动画  
+
+  // 玩家持剑闲置动画
   { name: "idle_sword0", url: playerIdleSword0, preload: true },
   { name: "idle_sword1", url: playerIdleSword1, preload: true },
   { name: "idle_sword2", url: playerIdleSword2, preload: true },
   { name: "idle_sword3", url: playerIdleSword3, preload: true },
   { name: "idle_sword4", url: playerIdleSword4, preload: true },
   { name: "idle_sword5", url: playerIdleSword5, preload: true },
-  
+
   // 玩家跑步动画
   { name: "run0", url: playerRun0, preload: true },
   { name: "run1", url: playerRun1, preload: true },
@@ -116,13 +116,13 @@ export const GAME_RESOURCES: ImageResource[] = [
   { name: "run3", url: playerRun3, preload: true },
   { name: "run4", url: playerRun4, preload: true },
   { name: "run5", url: playerRun5, preload: true },
-  
+
   // 玩家跳跃动画
   { name: "jump0", url: playerJump0, preload: true },
   { name: "jump1", url: playerJump1, preload: true },
   { name: "jump2", url: playerJump2, preload: true },
   { name: "jump3", url: playerJump3, preload: true },
-  
+
   // 玩家攻击动画 - 第1套
   { name: "1-0", url: playerAttack1_0 },
   { name: "1-1", url: playerAttack1_1 },
@@ -130,7 +130,7 @@ export const GAME_RESOURCES: ImageResource[] = [
   { name: "1-3", url: playerAttack1_3 },
   { name: "1-4", url: playerAttack1_4 },
   { name: "1-5", url: playerAttack1_5 },
-  
+
   // 玩家攻击动画 - 第2套
   { name: "2-0", url: playerAttack2_0 },
   { name: "2-1", url: playerAttack2_1 },
@@ -138,19 +138,19 @@ export const GAME_RESOURCES: ImageResource[] = [
   { name: "2-3", url: playerAttack2_3 },
   { name: "2-4", url: playerAttack2_4 },
   { name: "2-5", url: playerAttack2_5 },
-  
-  // 玩家攻击动画 - 第3套  
+
+  // 玩家攻击动画 - 第3套
   { name: "3-0", url: playerAttack3_0 },
   { name: "3-1", url: playerAttack3_1 },
   { name: "3-2", url: playerAttack3_2 },
   { name: "3-3", url: playerAttack3_3 },
-  
+
   // 敌人闲置动画
   { name: "eidle0", url: enemyIdle0, preload: true },
   { name: "eidle1", url: enemyIdle1, preload: true },
   { name: "eidle2", url: enemyIdle2, preload: true },
   { name: "eidle3", url: enemyIdle3, preload: true },
-  
+
   // 敌人行走动画
   { name: "ewalk0", url: enemyWalk0 },
   { name: "ewalk1", url: enemyWalk1 },
@@ -158,7 +158,7 @@ export const GAME_RESOURCES: ImageResource[] = [
   { name: "ewalk3", url: enemyWalk3 },
   { name: "ewalk4", url: enemyWalk4 },
   { name: "ewalk5", url: enemyWalk5 },
-  
+
   // 敌人攻击动画
   { name: "eattack0", url: enemyAttack0 },
   { name: "eattack1", url: enemyAttack1 },
@@ -168,13 +168,13 @@ export const GAME_RESOURCES: ImageResource[] = [
   { name: "eattack5", url: enemyAttack5 },
   { name: "eattack6", url: enemyAttack6 },
   { name: "eattack7", url: enemyAttack7 },
-  
+
   // 敌人死亡动画
   { name: "edie0", url: enemyDie0 },
   { name: "edie1", url: enemyDie1 },
   { name: "edie2", url: enemyDie2 },
   { name: "edie3", url: enemyDie3 },
-  
+
   // 地图瓦片资源
   { name: "t1", url: tile1, preload: true },
   { name: "t2", url: tile2, preload: true },
@@ -209,10 +209,10 @@ export function getAllResources(): ImageResource[] {
 export function getResourcesByType(type: 'player' | 'enemy' | 'background' | 'tiles'): ImageResource[] {
   switch (type) {
     case 'player':
-      return GAME_RESOURCES.filter(r => 
-        r.name.includes('idle') || 
-        r.name.includes('run') || 
-        r.name.includes('jump') || 
+      return GAME_RESOURCES.filter(r =>
+        r.name.includes('idle') ||
+        r.name.includes('run') ||
+        r.name.includes('jump') ||
         r.name.includes('-')
       );
     case 'enemy':

@@ -32,7 +32,7 @@ export interface IGame {
   canvasHeight: number;
   keyStatus: KeyStatus;
   frameCount: number;
-  
+
   // 方法
   drawImage(img: IGameImage, width: number, height: number): void;
   update(): void;
@@ -54,7 +54,7 @@ export interface IGameElement {
   w: number;
   h: number;
   scene?: IGameScene;
-  
+
   // 方法
   draw(): void;
   update(): void;
@@ -71,7 +71,7 @@ export interface IGameScene {
   game: IGame;
   elements: IGameElement[];
   enemy?: IEnemy; // 可选的敌人属性，用于调试模块
-  
+
   // 方法
   addElement(img: IGameElement): void;
   popElement(): void;
@@ -109,7 +109,7 @@ export interface IGameTileMap {
   tw: number; // 地图宽度（列数）
   tileImages: IGameImage[];
   tileSize: number;
-  
+
   // 方法
   setPlayer(player: any): void;
   updateCamera(): void;
@@ -148,7 +148,7 @@ export interface ICharacter extends IGameElement {
   idleFrame: HTMLImageElement[];
   texture?: HTMLImageElement | null;
   isPlayer?: boolean;
-  
+
   // 方法
   delete(element: any): void;
   move(x: number): void;
@@ -175,7 +175,7 @@ export interface IPlayer extends ICharacter {
   footOffset: number;
   jumpHitWall: boolean;
   minVerticalDelta: number;
-  
+
   // 方法
   initIdleFrame(game: IGame): void;
   initRunFrame(game: IGame): void;
@@ -200,7 +200,7 @@ export interface IEnemy extends ICharacter {
   AttackBar: any;
   damageValue: number;
   isDead: boolean;
-  
+
   // 方法
   setMap(map: IGameTileMap): void;
   initAttackFrame(game: IGame): void;
@@ -233,7 +233,7 @@ export interface IHpBar extends Omit<IGameElement, 'update'> {
   redW: number;
   isRemove: boolean;
   character: any;
-  
+
   // 方法
   draw(): void;
   update(percentage: number): void;
@@ -249,7 +249,7 @@ export interface IAttackValue extends Omit<IGameElement, 'update'> {
   text: string;
   isShow: boolean;
   character: any;
-  
+
   // 方法
   draw(): void;
   update(hurtNum: number): void;
@@ -265,7 +265,7 @@ export interface IAttackValue extends Omit<IGameElement, 'update'> {
 export interface IDebugModule extends IGameElement {
   game: IGame;
   enabled: boolean;
-  
+
   // 方法
   initToggleButton(): void;
   drawPlayerCollision(player: any): void;
@@ -391,7 +391,7 @@ export interface IMainScene extends IGameScene {
   enemy: any;
   map: any;
   debugModule: any;
-  
+
   // 主游戏场景特有方法
   setupControls(): void;
   handlePlayerInput(): void;
@@ -402,7 +402,7 @@ export interface IMainScene extends IGameScene {
 // ===========================================
 
 // 游戏事件类型
-export type GameEventType = 
+export type GameEventType =
   | "player_move"
   | "player_jump"
   | "player_attack"
@@ -426,7 +426,7 @@ export type EventHandler = (event: GameEvent) => void;
 // ===========================================
 
 // 所有游戏对象的联合类型
-export type GameObject = 
+export type GameObject =
   | IGame
   | IGameScene
   | IGameElement
@@ -467,37 +467,37 @@ export interface LoadProgress {
 export interface IResourceManager {
   // 加载单个图片
   loadImage(name: string, url: string): Promise<HTMLImageElement>;
-  
+
   // 批量加载图片
   loadImages(resources: ImageResource[]): Promise<Map<string, HTMLImageElement>>;
-  
+
   // 预加载图片
   preloadImages(resources: ImageResource[]): Promise<void>;
-  
+
   // 获取图片
   getImage(name: string): HTMLImageElement | null;
-  
+
   // 检查是否已加载
   isImageLoaded(name: string): boolean;
-  
+
   // 获取加载进度
   getLoadProgress(): LoadProgress;
-  
+
   // 清理资源
   cleanup(): void;
-  
+
   // 移除指定资源
   removeImage(name: string): void;
-  
+
   // 获取所有资源名称
   getAllImageNames(): string[];
-  
+
   // 获取内存使用情况
   getMemoryUsage(): { imageCount: number; estimatedSize: string };
-  
+
   // 进度更新回调
   onProgressUpdate?: (progress: LoadProgress, resourceName: string) => void;
-  
+
   // 错误处理回调
   onError?: (error: Error, resourceName: string) => void;
 }

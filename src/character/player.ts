@@ -101,8 +101,8 @@ export class Player extends Character {
   initIdleFrame(game: Game) {
     // 创建闲置时的 frame 数组，里面存放的是图片信息
     for (let i = 0; i < PLAYER_IDLE_IMAGE_NUMBER; i++) {
-      let name = `idle${i}`;
-      let t = game.textureByName(name);
+      const name = `idle${i}`;
+      const t = game.textureByName(name);
       for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
         this.idleFrame.push(t as HTMLImageElement);
       }
@@ -111,26 +111,26 @@ export class Player extends Character {
   initRunFrame(game: Game) {
     // 创建奔跑时的 frame 数组，里面存放的是图片信息
     for (let i = 0; i < PLAYER_RUN_IMAGE_NUMBER; i++) {
-      let name = `run${i}`;
-      let t = game.textureByName(name);
+      const name = `run${i}`;
+      const t = game.textureByName(name);
       for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
         this.runFrames.push(t as HTMLImageElement);
       }
     }
   }
   initAttackFrame(game: Game, type: number) {
-    let ATTACK_MAP: { [key: number]: HTMLImageElement[] } = {
+    const ATTACK_MAP: { [key: number]: HTMLImageElement[] } = {
       1: this.attack1Frames,
       2: this.attack2Frames,
       3: this.attack3Frames,
     };
-    let index =
+    const index =
       type === 3
         ? PLAYER_ATTACK_TYPE_3_NUMBER
         : PLAYER_ATTACK_TYPE_1_OR_2_NUMBER;
     for (let i = 0; i < index; i++) {
-      let name = `attack${type}_${i}`;
-      let t = game.textureByName(name);
+      const name = `attack${type}_${i}`;
+      const t = game.textureByName(name);
       for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
         ATTACK_MAP[type].push(t as HTMLImageElement);
       }
@@ -138,8 +138,8 @@ export class Player extends Character {
   }
   initJumpFrame(game: Game) {
     for (let i = 0; i < PLAYER_JUMP_IMAGE_NUMBER; i++) {
-      let name = `jump${i}`;
-      let t = game.textureByName(name);
+      const name = `jump${i}`;
+      const t = game.textureByName(name);
       for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
         this.jumpFrames.push(t as HTMLImageElement);
       }
@@ -172,8 +172,8 @@ export class Player extends Character {
   }
   updateGravity() {
     // 使用角色中心点和底部作为地面检测点
-    let footX = Math.floor((this.x + this.w / 2) / this.tileSize);
-    let footY = Math.floor((this.y + this.h) / this.tileSize);
+    const footX = Math.floor((this.x + this.w / 2) / this.tileSize);
+    const footY = Math.floor((this.y + this.h) / this.tileSize);
 
     // 检查脚下是否有地面 - 修改为检查脚下中心位置
     let onTheGround = this.map.onTheGround(footX, footY);
@@ -196,7 +196,7 @@ export class Player extends Character {
     }
 
     // 检测上一帧是否已经在地面上
-    let wasOnGround = this.isOnGround;
+    const wasOnGround = this.isOnGround;
 
     // 修复：仅当下落速度为正（下落状态）或接近于零时才认为在地面上
     // 增加一个小的容差值，避免浮点数精度问题
@@ -291,9 +291,9 @@ export class Player extends Character {
     // 检测头顶碰撞
     if (this.vy < 0) {
       // 使用角色顶部中心点检测头顶碰撞
-      let headX = Math.floor((this.x + this.w / 2) / this.tileSize);
-      let headY = Math.floor(this.y / this.tileSize);
-      let headBlock = this.map.onTheGround(headX, headY);
+      const headX = Math.floor((this.x + this.w / 2) / this.tileSize);
+      const headY = Math.floor(this.y / this.tileSize);
+      const headBlock = this.map.onTheGround(headX, headY);
 
       if (headBlock) {
         // 如果头顶有障碍物，停止上升
@@ -468,7 +468,7 @@ export class Player extends Character {
     // 记录更新结束时的状态
   }
   attack(enemy: Enemy) {
-    let ATTACK_FRAMES_MAP: { [key: number]: HTMLImageElement[] } = {
+    const ATTACK_FRAMES_MAP: { [key: number]: HTMLImageElement[] } = {
       1: this.attack1Frames,
       2: this.attack2Frames,
       3: this.attack3Frames,
@@ -494,7 +494,7 @@ export class Player extends Character {
         // 开始攻击, 删除敌人 TODO 这里应该在攻击动画播放结束的时候删除敌人,现在定时器是一种 hack 的方案。不应该这么做
         setTimeout(() => {
           // 暂时设置伤害值是 30-50 间的随机数
-          let damageValue = Math.round(PLAYER_ATTACK_DAMAGE_VALUE);
+          const damageValue = Math.round(PLAYER_ATTACK_DAMAGE_VALUE);
           enemy.killEvent(damageValue);
         }, 500);
       }
@@ -602,7 +602,7 @@ export class Player extends Character {
     if ((canMove && !this.jumpHitWall) || nearWallTop) {
       super.move(x);
       // 摩擦力系统
-      let speed = 0.3 * x;
+      const speed = 0.3 * x;
       this.vx += speed;
       this.mx = -speed / 2;
 
@@ -661,7 +661,7 @@ export class Player extends Character {
     // 停止场景更新
 
     // 切换到游戏结束场景
-    let s = SceneTitle.new(this.game);
+    const s = SceneTitle.new(this.game);
     this.game.replaceScene(s);
   }
 }

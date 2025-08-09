@@ -30,7 +30,7 @@ export class GameImage implements IGameImage {
     this.h = h || (this.texture as HTMLImageElement).height;
   }
   static new(game: Game, name: string) {
-    var i = new this(game, name);
+    const i = new this(game, name);
     return i;
   }
   draw() {

@@ -41,9 +41,21 @@ export class Game implements IGame {
     // 设置像素完美渲染 - 关闭图像平滑以避免砖块间出现细线
     this.context.imageSmoothingEnabled = false;
     // 确保Canvas使用清晰的像素渲染（使用类型断言处理浏览器兼容性）
-    (this.context as any).webkitImageSmoothingEnabled = false;
-    (this.context as any).mozImageSmoothingEnabled = false;
-    (this.context as any).msImageSmoothingEnabled = false;
+    (this.context as CanvasRenderingContext2D & {
+      webkitImageSmoothingEnabled?: boolean;
+      mozImageSmoothingEnabled?: boolean;
+      msImageSmoothingEnabled?: boolean;
+    }).webkitImageSmoothingEnabled = false;
+    (this.context as CanvasRenderingContext2D & {
+      webkitImageSmoothingEnabled?: boolean;
+      mozImageSmoothingEnabled?: boolean;
+      msImageSmoothingEnabled?: boolean;
+    }).mozImageSmoothingEnabled = false;
+    (this.context as CanvasRenderingContext2D & {
+      webkitImageSmoothingEnabled?: boolean;
+      mozImageSmoothingEnabled?: boolean;
+      msImageSmoothingEnabled?: boolean;
+    }).msImageSmoothingEnabled = false;
 
     this.canvasWidth = this.canvas.clientWidth;
     this.canvasHeight = this.canvas.clientHeight;
@@ -94,7 +106,7 @@ export class Game implements IGame {
   }
   registerAction = (
     key: string,
-    callback: (keyStatus: "up" | "down") => void
+    callback: (_keyStatus: "up" | "down") => void
   ) => {
     this.actions[key] = () => callback(this.keyStatus);
   };
@@ -103,14 +115,13 @@ export class Game implements IGame {
     performanceMonitor.frameStart();
 
     try {
-      let g = this;
 
       // 输入处理
-      var actions = Object.keys(g.actions);
+      const actions = Object.keys(this.actions);
       for (let i = 0; i < actions.length; i++) {
-        var key = actions[i];
-        if (g.keydowns[key]) {
-          g.actions[key]();
+        const key = actions[i];
+        if (this.keydowns[key]) {
+          this.actions[key]();
         }
       }
 
@@ -118,23 +129,24 @@ export class Game implements IGame {
 
       // 更新逻辑性能监控
       performanceMonitor.updateStart();
-      g.update();
+      this.update();
       performanceMonitor.updateEnd();
 
       // 渲染性能监控
       performanceMonitor.renderStart();
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      g.draw();
+      this.draw();
       performanceMonitor.renderEnd();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 捕获游戏循环中的错误
-      reportGameError("runtime", "Game loop error", error.message, {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      reportGameError("runtime", "Game loop error", errorMessage, {
         frameCount: this.frameCount,
         scene: this.scene?.constructor.name || "unknown",
       });
 
       // 尝试继续运行，除非是致命错误
-      if (error.name === "FatalError") {
+      if (error instanceof Error && error.name === "FatalError") {
         return;
       }
     }
@@ -171,8 +183,7 @@ export class Game implements IGame {
     return this.resourceManager.getLoadProgress();
   }
   runWithScene(scene: IGameScene) {
-    let g = this;
-    g.scene = scene;
+    this.scene = scene;
     setTimeout(() => {
       this.runLoop();
     }, 1000 / window.fps);
@@ -205,11 +216,13 @@ export class Game implements IGame {
 
   private setupErrorHandling() {
     // 设置错误处理回调
-    gameErrorHandler.onError = (error: any) => {
+    gameErrorHandler.onError = (error: unknown) => {
+      // eslint-disable-next-line no-console
       console.error("Game Error:", error);
     };
 
-    gameErrorHandler.onFatalError = (error: any) => {
+    gameErrorHandler.onFatalError = (error: unknown) => {
+      // eslint-disable-next-line no-console
       console.error("Fatal Game Error:", error);
       // 可以在这里显示错误页面或重启游戏
       this.handleFatalError(error);
@@ -217,9 +230,13 @@ export class Game implements IGame {
 
     // 添加资源恢复策略
     gameErrorHandler.addRecoveryStrategy("game-resource", {
-      canRecover: (error: any) =>
-        error.type === "resource" && !!this.resourceManager,
-      recover: async (_error: any) => {
+      canRecover: (error: unknown) =>
+        typeof error === "object" &&
+        error !== null &&
+        "type" in error &&
+        (error as { type: string }).type === "resource" &&
+        !!this.resourceManager,
+      recover: async () => {
         try {
           // 尝试重新初始化资源管理器
           await this.resourceManager.cleanup();
@@ -228,7 +245,8 @@ export class Game implements IGame {
           return false;
         }
       },
-      fallback: (_error: any) => {
+      fallback: () => {
+        // eslint-disable-next-line no-console
         console.warn("Using fallback resources due to loading failure");
         // 可以加载最小化的资源集
       },
@@ -237,7 +255,8 @@ export class Game implements IGame {
 
   private setupPerformanceMonitoring() {
     // 设置性能警报回调
-    performanceMonitor.onAlert = (alert: any) => {
+    performanceMonitor.onAlert = (alert: { type: string; message: string }) => {
+      // eslint-disable-next-line no-console
       console.warn(`Performance Alert [${alert.type}]:`, alert.message);
 
       // 根据不同类型的性能问题采取相应措施
@@ -258,13 +277,20 @@ export class Game implements IGame {
       }
     };
 
-    performanceMonitor.onMetricsUpdate = (metrics: any) => {
+    performanceMonitor.onMetricsUpdate = (metrics: {
+      totalFrames: number;
+      fps: { average: number };
+      renderTime: { average: number };
+      memory: { percentage: number };
+    }) => {
       // 可以在调试模式下显示性能指标
-      // if (process.env.NODE_ENV === 'development') { // 暂时注释掉，避免编译错误
-      if (true) {
+      // 在浏览器环境中，我们可以通过其他方式检测开发模式，这里简化处理
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isDevelopment) {
         // 开发模式检查
         // 每30秒输出一次性能报告
         if (metrics.totalFrames % (30 * 60) === 0) {
+          // eslint-disable-next-line no-console
           console.log("Performance Report:", {
             fps: metrics.fps.average.toFixed(1),
             renderTime: metrics.renderTime.average.toFixed(2),
@@ -276,7 +302,7 @@ export class Game implements IGame {
     };
   }
 
-  private handleFatalError(error: any) {
+  private handleFatalError(error: unknown) {
     // 尝试安全关闭游戏
     try {
       if (this.scene) {
@@ -290,11 +316,12 @@ export class Game implements IGame {
       // 显示错误信息给用户
       this.displayErrorScreen(error);
     } catch (shutdownError) {
+      // eslint-disable-next-line no-console
       console.error("Error during game shutdown:", shutdownError);
     }
   }
 
-  private displayErrorScreen(error: any) {
+  private displayErrorScreen(error: unknown) {
     // 在canvas上绘制错误信息
     this.context.fillStyle = "#000000";
     this.context.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
@@ -316,11 +343,12 @@ export class Game implements IGame {
       this.canvasHeight / 2 + 20
     );
 
-    if (error.message) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage) {
       this.context.font = "12px Arial";
       this.context.fillStyle = "#cccccc";
       this.context.fillText(
-        error.message,
+        errorMessage,
         this.canvasWidth / 2,
         this.canvasHeight / 2 + 50
       );
@@ -329,8 +357,8 @@ export class Game implements IGame {
 
   private performGarbageCollection() {
     // 强制垃圾回收（如果支持）
-    if ("gc" in window && typeof (window as any).gc === "function") {
-      (window as any).gc();
+    if ("gc" in window && typeof (window as Window & { gc?: () => void }).gc === "function") {
+      (window as Window & { gc: () => void }).gc();
     }
 
     // 清理可能的内存泄漏
@@ -360,6 +388,7 @@ export class Game implements IGame {
       // 启动游戏
       this.__start();
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("Failed to initialize game resources:", error);
       // 可以显示错误页面或重试机制
     }

@@ -13,28 +13,28 @@ import startbgImage from "@/assets/background/startbg.png";
 
 const main = async () => {
   // 这个地方是加了一个滑动条来控制帧率
-  let input = document.querySelector("#id-input-speed") as HTMLInputElement;
-  let zhen = document.querySelector(".zhen");
+  const input = document.querySelector("#id-input-speed") as HTMLInputElement;
+  const zhen = document.querySelector(".zhen");
   let fps = FPS;
   if (input && zhen) {
     input.value = String(FPS);
     zhen.innerHTML = `帧率（${fps})`;
     input.addEventListener("input", (event: Event) => {
-      let input = event.target as HTMLInputElement;
+      const input = event.target as HTMLInputElement;
       fps = Number(input?.value);
       zhen.innerHTML = `帧率（${fps})`;
       window.fps = fps;
     });
   }
 
-  var images: { [key: string]: string } = {
+  let images: { [key: string]: string } = {
     bg: bgImage,
     startbg: startbgImage,
   };
 
-  let playerImages = new PlayerImages().images;
-  let enemyImages = new EnemyImages().images;
-  let mapImages = new MapImages().images;
+  const playerImages = new PlayerImages().images;
+  const enemyImages = new EnemyImages().images;
+  const mapImages = new MapImages().images;
 
   images = Object.assign(images, playerImages);
   images = Object.assign(images, enemyImages);
@@ -42,22 +42,22 @@ const main = async () => {
 
   // 创建游戏实例
   const game = new Game(FPS, images, function (g: Game) {
-    var s = SceneTitle.new(g);
+    const s = SceneTitle.new(g);
     g.runWithScene(s);
   });
-  
+
   // 创建加载屏幕
   const loadingScreen = new LoadingScreen(game);
   loadingScreen.show();
-  
+
   // 设置资源管理器进度回调
   const resourceManager = game.getResourceManager();
   // let currentResourceName = ''; // 暂时注释掉未使用的变量
-  
+
   resourceManager.onProgressUpdate = (progress, resourceName) => {
     // currentResourceName = resourceName; // 暂时注释掉
     loadingScreen.draw(progress, resourceName);
-    
+
     if (progress.progress === 1) {
       // 所有资源加载完成，隐藏加载屏幕
       setTimeout(() => {
@@ -65,11 +65,11 @@ const main = async () => {
       }, 500); // 延迟500ms让用户看到100%完成
     }
   };
-  
+
   resourceManager.onError = (error, resourceName) => {
     loadingScreen.drawError(`Failed to load ${resourceName}: ${error.message}`);
   };
-  
+
   // 预加载现代资源管理系统的资源（可选）
   try {
     const modernResources = getAllResources();

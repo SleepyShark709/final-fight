@@ -72,14 +72,14 @@ export class Character implements ICharacter {
     this.h = this.texture ? this.texture.height : 0; // 图片高
   }
   draw() {
-    let context = this.game.context;
+    const context = this.game.context;
     context.save();
-    let w2 = this.w / 2;
-    let h2 = this.h / 2;
+    const w2 = this.w / 2;
+    const h2 = this.h / 2;
 
     // 获取角色的屏幕坐标（考虑地图偏移）
     let screenX = this.x;
-    let screenY = this.y;
+    const screenY = this.y;
 
     // 如果角色有地图引用且地图有偏移功能，应用地图偏移
     if (this.map && this.map.offsetX !== undefined) {

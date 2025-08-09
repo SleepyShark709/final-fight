@@ -8,7 +8,8 @@
       "Bash(git add:*)",
       "Bash(mkdir:*)",
       "Bash(npm run lint:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
   }

@@ -61,8 +61,8 @@ export class Enemy extends Character {
 
   initAttackFrame(game: Game) {
     for (let i = 0; i < ENEMY_ATTACK_NUMBER; i++) {
-      let name = `eattack${i}`;
-      let t = game.textureByName(name);
+      const name = `eattack${i}`;
+      const t = game.textureByName(name);
       for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
         this.attack1Frames.push(t as HTMLImageElement);
       }
@@ -70,8 +70,8 @@ export class Enemy extends Character {
   }
   initRunFrame(game: Game) {
     for (let i = 0; i < ENEMY_RUN_NUMBER; i++) {
-      let name = `ewalk${i}`;
-      let t = game.textureByName(name);
+      const name = `ewalk${i}`;
+      const t = game.textureByName(name);
       for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
         this.runFrames.push(t as HTMLImageElement);
       }
@@ -79,8 +79,8 @@ export class Enemy extends Character {
   }
   initFrames(game: Game) {
     for (let i = 0; i < ENEMY_IDLE_NUMBER; i++) {
-      let name = `eidle${i}`;
-      let t = game.textureByName(name);
+      const name = `eidle${i}`;
+      const t = game.textureByName(name);
       for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
         this.idleFrame.push(t as HTMLImageElement);
       }
@@ -88,8 +88,8 @@ export class Enemy extends Character {
   }
   initDieFrames(game: Game) {
     for (let i = 0; i < ENEMY_DIE_NUMBER; i++) {
-      let name = `edie${i}`;
-      let t = game.textureByName(name);
+      const name = `edie${i}`;
+      const t = game.textureByName(name);
       for (let j = 0; j < RENDER_IMAGE_NUMBER; j++) {
         this.dieFrame.push(t as HTMLImageElement);
       }
