@@ -16,7 +16,7 @@ export class Scene extends GameScene {
     // 背景图片偏移系数（视差效果）- 0.5表示背景移动速度是地图的一半
     parallaxFactor: number;
     // 绘制背景
-    draw: (context: CanvasRenderingContext2D, map: GameTileMap) => void;
+    draw: (_context: CanvasRenderingContext2D, _map: GameTileMap) => void;
   };
   player: Player;
   enemy: Enemy;
@@ -27,7 +27,7 @@ export class Scene extends GameScene {
     super(game);
 
     // 创建地图
-    let map = new GameTileMap(game);
+    const map = new GameTileMap(game);
     this.map = map;
 
     // 背景管理系统
@@ -65,7 +65,7 @@ export class Scene extends GameScene {
     this.addElement(map);
 
     // 创建玩家
-    let player = new Player(game, map);
+    const player = new Player(game, map);
     player.x = 112;
     player.y = 100;
     this.player = player;
@@ -76,7 +76,7 @@ export class Scene extends GameScene {
     this.addElement(player);
 
     // 创建敌人
-    let enemy = new Enemy(game);
+    const enemy = new Enemy(game);
     this.enemy = enemy;
     enemy.x = 500;
     enemy.y = 354;
@@ -200,30 +200,29 @@ export class Scene extends GameScene {
   }
 
   setupInputs() {
-    let self = this;
-    let playerSpeed = 5;
+    const playerSpeed = 5;
 
-    self.game.registerAction("a", () => {
+    this.game.registerAction("a", () => {
       // 简化移动逻辑，直接调用移动方法
       this.player.move(-playerSpeed);
     });
 
-    self.game.registerAction("d", () => {
+    this.game.registerAction("d", () => {
       // 简化移动逻辑，直接调用移动方法
       this.player.move(playerSpeed);
     });
 
-    self.game.registerAction("j", () => {
+    this.game.registerAction("j", () => {
       this.player.attack(this.enemy);
     });
 
-    self.game.registerAction("k", (keyStatus: "up" | "down") => {
+    this.game.registerAction("k", (keyStatus: "up" | "down") => {
       this.player.jump(keyStatus);
     });
 
     // 按p键切换调试信息显示
     let debugToggled = false;
-    self.game.registerAction("p", (keyStatus: "up" | "down") => {
+    this.game.registerAction("p", (keyStatus: "up" | "down") => {
       if (keyStatus === "down" && !debugToggled) {
         debugToggled = true;
         this.debugModule.enabled = !this.debugModule.enabled;
@@ -233,14 +232,14 @@ export class Scene extends GameScene {
     });
 
     // 添加手动控制地图滚动的按键(用于调试)
-    self.game.registerAction("z", (keyStatus: "up" | "down") => {
+    this.game.registerAction("z", (keyStatus: "up" | "down") => {
       if (keyStatus === "down") {
         // 手动向左滚动地图
         this.map.offsetX += 10;
       }
     });
 
-    self.game.registerAction("x", (keyStatus: "up" | "down") => {
+    this.game.registerAction("x", (keyStatus: "up" | "down") => {
       if (keyStatus === "down") {
         // 手动向右滚动地图
         this.map.offsetX -= 10;
@@ -248,7 +247,7 @@ export class Scene extends GameScene {
     });
 
     // 添加重置位置的功能
-    self.game.registerAction("r", (keyStatus: "up" | "down") => {
+    this.game.registerAction("r", (keyStatus: "up" | "down") => {
       if (keyStatus === "down") {
         // 重置玩家位置和地图偏移
         this.player.x = 112;

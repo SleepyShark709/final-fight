@@ -1,16 +1,21 @@
 {
+  "root": true,
   "env": {
     "browser": true,
-    "es2021": true,
+    "es2023": true,
     "node": true
   },
-  "extends": [
-    "eslint:recommended"
-  ],
+  "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
+  ],
   "rules": {
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "prefer-const": "error",
@@ -23,10 +28,5 @@
     "no-trailing-spaces": "error",
     "eol-last": "error"
   },
-  "ignorePatterns": [
-    "dist/",
-    "node_modules/",
-    "editor/",
-    "**/*.d.ts"
-  ]
+  "ignorePatterns": ["dist/", "node_modules/", "editor/", "**/*.d.ts"]
 }

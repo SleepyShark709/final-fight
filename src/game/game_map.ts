@@ -88,7 +88,7 @@ export class GameTileMap {
       // 复制原始地图数据
       for (let i = 0; i < originalMapData.length; i++) {
         // 为每个重复段添加一些变化，使地图更有趣
-        let tileValue = originalMapData[i];
+        const tileValue = originalMapData[i];
 
         // 添加一些随机障碍物和平台(在非第一段地图中)
         if (repeat > 0 && tileValue === 0 && Math.random() < 0.05) {
@@ -120,7 +120,7 @@ export class GameTileMap {
 
     // 计算地图总宽度(像素)
     this.mapWidth = this.tw * this.tileSize;
-    
+
     // 设置IGameElement接口要求的尺寸
     this.w = this.mapWidth;
     this.h = this.th * this.tileSize;
@@ -172,10 +172,6 @@ export class GameTileMap {
       this.reachedRightBoundary = false;
     }
 
-    // 调试信息
-    if (this.game.frameCount % 60 === 0) {
-    }
-
     // 更新摄像机位置用于调试显示
     this.cameraX = -this.offsetX;
   }
@@ -187,8 +183,8 @@ export class GameTileMap {
 
   // 检查某个位置是否有砖块
   onTheGround(i: number, j: number) {
-    let index = i * this.th + j;
-    let tile = this.tiles[index];
+    const index = i * this.th + j;
+    const tile = this.tiles[index];
     if (tile === undefined) {
       return false;
     }
@@ -199,51 +195,51 @@ export class GameTileMap {
   // 墙壁通常是垂直方向的砖块，地面是水平方向的砖块
   isTileWall(i: number, j: number) {
     // 首先检查该位置是否有砖块
-    let tile = this.getTile(i, j);
+    const tile = this.getTile(i, j);
     if (tile === 0) {
       return false; // 不是砖块
     }
 
     // 获取上下左右位置的砖块情况
-    let aboveTile = this.getTile(i, j - 1); // 上方
-    let belowTile = this.getTile(i, j + 1); // 下方
-    let leftTile = this.getTile(i - 1, j); // 左侧
-    let rightTile = this.getTile(i + 1, j); // 右侧
+    // const aboveTile = this.getTile(i, j - 1); // 上方
+    // const belowTile = this.getTile(i, j + 1); // 下方
+    // const leftTile = this.getTile(i - 1, j); // 左侧
+    // const rightTile = this.getTile(i + 1, j); // 右侧
     return true;
 
-    // 改进的墙壁判定逻辑:
-    // 1. 如果砖块的下方是空的，这很可能是平台/地面的边缘，不是墙壁
-    if (belowTile === 0 || belowTile === undefined) {
-      return false;
-    }
+    // // 改进的墙壁判定逻辑:
+    // // 1. 如果砖块的下方是空的，这很可能是平台/地面的边缘，不是墙壁
+    // if (belowTile === 0 || belowTile === undefined) {
+    //   return false;
+    // }
 
-    // 2. 如枟上方是空的，而下方不是空的，这是正常的地面，不是墙壁
-    if ((aboveTile === 0 || aboveTile === undefined) && belowTile !== 0) {
-      return false;
-    }
+    // // 2. 如枟上方是空的，而下方不是空的，这是正常的地面，不是墙壁
+    // if ((aboveTile === 0 || aboveTile === undefined) && belowTile !== 0) {
+    //   return false;
+    // }
 
-    // 3. 如果左右都有砖块，但上方是空的，这是连续地面，不是墙壁
-    if (
-      leftTile !== 0 &&
-      leftTile !== undefined &&
-      rightTile !== 0 &&
-      rightTile !== undefined &&
-      (aboveTile === 0 || aboveTile === undefined)
-    ) {
-      return false;
-    }
+    // // 3. 如果左右都有砖块，但上方是空的，这是连续地面，不是墙壁
+    // if (
+    //   leftTile !== 0 &&
+    //   leftTile !== undefined &&
+    //   rightTile !== 0 &&
+    //   rightTile !== undefined &&
+    //   (aboveTile === 0 || aboveTile === undefined)
+    // ) {
+    //   return false;
+    // }
 
-    // 4. 大多数其他情况为垂直结构的墙壁
-    let isWall =
-      (aboveTile !== 0 && aboveTile !== undefined) ||
-      (leftTile !== 0 && rightTile !== 0);
+    // // 4. 大多数其他情况为垂直结构的墙壁
+    // let isWall =
+    //   (aboveTile !== 0 && aboveTile !== undefined) ||
+    //   (leftTile !== 0 && rightTile !== 0);
 
-    return isWall;
+    // return isWall;
   }
 
   // 获取指定位置的瓦片类型
   getTile(i: number, j: number) {
-    let index = i * this.th + j;
+    const index = i * this.th + j;
     if (index < 0 || index >= this.tiles.length) {
       return undefined;
     }
@@ -267,8 +263,8 @@ export class GameTileMap {
   }
 
   draw() {
-    let h = this.th;
-    let w = this.tw;
+    const h = this.th;
+    const w = this.tw;
 
     // 根据偏移量计算可见区域的起始和结束列
     let startCol = Math.floor(-this.offsetX / this.tileSize);
@@ -281,23 +277,23 @@ export class GameTileMap {
     // 只绘制可见区域内的瓦片
     for (let i = startCol; i < endCol; i++) {
       for (let j = 0; j < h; j++) {
-        let index = i * h + j;
-        let tile = this.tiles[index];
+        const index = i * h + j;
+        const tile = this.tiles[index];
 
         if (tile !== 0) {
           // 确保坐标为整数以避免像素模糊和细线问题
-          let x = Math.floor(i * this.tileSize + this.offsetX);
-          let y = Math.floor(j * this.tileSize);
+          const x = Math.floor(i * this.tileSize + this.offsetX);
+          const y = Math.floor(j * this.tileSize);
 
           // 绘制瓦片图像
-          let image = this.tileImages[tile - 1];
+          const image = this.tileImages[tile - 1];
           if (image && image.texture) {
             let texture = image.texture;
-            if (typeof texture === 'string') {
+            if (typeof texture === "string") {
               // 如果texture是字符串，尝试从游戏中获取HTMLImageElement
               texture = this.game.textureByName(texture as string);
             }
-            if (texture && typeof texture !== 'string') {
+            if (texture && typeof texture !== "string") {
               this.game.context.drawImage(
                 texture as HTMLImageElement,
                 x,

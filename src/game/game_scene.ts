@@ -1,5 +1,5 @@
 import { Game } from "./game";
-import { IGameScene, IGameElement } from '@/types/index';
+import { IGameScene, IGameElement } from "@/types/index";
 
 export class GameScene implements IGameScene {
   game: Game;
@@ -9,7 +9,7 @@ export class GameScene implements IGameScene {
     this.elements = [];
   }
   static new(game: Game) {
-    var i = new this(game);
+    const i = new this(game);
     return i;
   }
   addElement(img: IGameElement) {
@@ -21,7 +21,7 @@ export class GameScene implements IGameScene {
   }
   deleteElement(element: IGameElement) {
     // 找到要删除的类
-    let index = this.elements.indexOf(element);
+    const index = this.elements.indexOf(element);
     if (index > 0) {
       // 如果找到了则删除
       this.elements.splice(index, 1);
@@ -29,13 +29,13 @@ export class GameScene implements IGameScene {
   }
   draw() {
     for (let i = 0; i < this.elements.length; i++) {
-      let e = this.elements[i];
+      const e = this.elements[i];
       e.draw();
     }
   }
   update() {
     for (let i = 0; i < this.elements.length; i++) {
-      let e = this.elements[i];
+      const e = this.elements[i];
       e.update();
     }
   }
