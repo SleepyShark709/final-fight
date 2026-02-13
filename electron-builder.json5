@@ -1,0 +1,24 @@
+{
+    appId: 'com.shark.finalfightv2',
+    productName: 'Final Fight V2',
+    directories: {
+        output: 'release',
+    },
+    files: ['dist/**/*', 'dist-electron/**/*'],
+    mac: {
+        target: ['zip'],
+        artifactName: '${productName}-${version}-Mac.${ext}',
+    },
+    win: {
+        target: ['nsis', 'portable'],
+        artifactName: '${productName}-${version}-Win.${ext}',
+    },
+    linux: {
+        target: ['AppImage'],
+        artifactName: '${productName}-${version}-Linux.${ext}',
+    },
+    nsis: {
+        oneClick: false,
+        allowToChangeInstallationDirectory: true,
+    },
+}

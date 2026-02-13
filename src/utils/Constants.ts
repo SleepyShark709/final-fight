@@ -113,6 +113,8 @@ export const SCENES = {
     MENU: 'MenuScene',
     GAME: 'GameScene',
     UI: 'UIScene',
+    GAME_OVER: 'GameOverScene',
+    WIN: 'WinScene',
 };
 
 // ===== 资源 Key =====
@@ -132,6 +134,8 @@ export const ASSETS = {
     TILESET_GRASS: 'tileset-grass',
     ENV_TILE: 'env-tile', // 环境贴图
     SKY_BACKGROUND: 'sky-background', // 天空背景
+    MOUNTAINS_BACKGROUND: 'mountains-background', // 远山背景
+    TREES_BACKGROUND: 'trees-background', // 树林背景
 };
 
 // ===== 图层深度 =====

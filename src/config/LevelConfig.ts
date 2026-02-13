@@ -1,4 +1,4 @@
-import { DEPTH, GAME_WIDTH, GAME_HEIGHT } from '../utils/Constants';
+import { DEPTH, GAME_HEIGHT } from '../utils/Constants';
 
 export interface DecorationPlacement {
     x: number;

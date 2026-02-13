@@ -148,8 +148,12 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
         const horizontalDistance = Math.abs(player.x - this.x);
         const minHorizontalDistance = 10; // 最小水平距离阈值
 
+        // 计算垂直距离（判断是否在同一平台层级）
+        const verticalDistance = Math.abs(this.y - player.y);
+        const isSamePlatform = verticalDistance < 50; // 允许一定的高度差容差
+
         // 检测玩家
-        if (distanceToPlayer <= this.config.attackRange) {
+        if (distanceToPlayer <= this.config.attackRange && isSamePlatform) {
             // 在攻击范围内 - 攻击
             // 只有在水平距离足够时才改变面向
             if (horizontalDistance > minHorizontalDistance) {
@@ -160,8 +164,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
                 }
             }
             this.attack(player);
-        } else if (distanceToPlayer <= this.config.detectRange) {
-            // 在检测范围内 - 追击
+        } else if (
+            distanceToPlayer <= this.config.detectRange &&
+            isSamePlatform
+        ) {
+            // 在检测范围内且在同一高度 - 追击
             this.currentState = EnemyState.CHASE;
             this.chasePlayer(player, horizontalDistance, minHorizontalDistance);
         } else {

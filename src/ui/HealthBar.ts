@@ -4,7 +4,7 @@
 import Phaser from 'phaser';
 
 export class HealthBar {
-    private scene: Phaser.Scene;
+    // private scene: Phaser.Scene; // Unused
     private x: number;
     private y: number;
     private width: number;
@@ -25,7 +25,7 @@ export class HealthBar {
         width: number,
         height: number,
     ) {
-        this.scene = scene;
+        // this.scene = scene; // Unused
         this.x = x;
         this.y = y;
         this.width = width;

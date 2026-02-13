@@ -10,7 +10,7 @@ import {
     DEPTH,
     TILE_SIZE,
     ASSETS,
-    PLAYER_CONFIG,
+    // PLAYER_CONFIG, // Unused
 } from '../utils/Constants';
 import { Player } from '../entities/Player';
 import { SkeletonEnemy } from '../entities/SkeletonEnemy';
@@ -38,8 +38,10 @@ export class GameScene extends Phaser.Scene {
     // 装饰物管理器
     private decorationManager!: DecorationManager;
 
-    // 背景
-    private background?: Phaser.GameObjects.TileSprite;
+    // 背景层
+    private sky?: Phaser.GameObjects.TileSprite;
+    private mountains?: Phaser.GameObjects.TileSprite;
+    private trees?: Phaser.GameObjects.TileSprite;
 
     // 是否暂停
     private isPaused: boolean = false;
@@ -110,8 +112,8 @@ export class GameScene extends Phaser.Scene {
         this.fpsText.setScrollFactor(0); // 固定在摄像机视口，不跟随世界移动
         this.fpsText.setVisible(false);
 
-        // 发送事件到 UI 场景
-        this.events.emit('player-created', this.player);
+        // 监听玩家死亡事件
+        this.events.on('player-died', this.handlePlayerDeath, this);
     }
 
     /**
@@ -124,17 +126,8 @@ export class GameScene extends Phaser.Scene {
         // 背景色
         this.cameras.main.setBackgroundColor('#87CEEB'); // 天蓝色
 
-        // 创建天空背景
-        this.background = this.add.tileSprite(
-            0,
-            0,
-            GAME_WIDTH,
-            GAME_HEIGHT,
-            ASSETS.SKY_BACKGROUND,
-        );
-        this.background.setOrigin(0, 0);
-        this.background.setScrollFactor(0); // 固定在相机
-        this.background.setDepth(DEPTH.BACKGROUND);
+        // 创建视差背景
+        this.createParallaxBackground();
 
         // 创建地面 - 使用草地素材
         const groundY = GAME_HEIGHT - TILE_SIZE;
@@ -162,26 +155,53 @@ export class GameScene extends Phaser.Scene {
         this.createPlatform(1800, GAME_HEIGHT - 280, 5);
 
         // 设置世界边界
-        this.physics.world.setBounds(0, 0, GAME_WIDTH * 3, GAME_HEIGHT);
+        // 设置世界边界 (增加一点宽度以确保能触发胜利)
+        this.physics.world.setBounds(0, 0, 3200, GAME_HEIGHT);
 
         // 创建装饰物管理器
         this.decorationManager = new DecorationManager(this);
         this.spawnDecorations();
+    }
 
-        // 监听 R 键重新加载装饰物 (调试用)
-        this.input.keyboard?.on('keydown-R', () => {
-            console.log('[Debug] Reloading decorations...');
-            this.decorationManager['scene'].children.list
-                .filter(
-                    (child) =>
-                        child instanceof Phaser.GameObjects.Container &&
-                        child.getData('isDecoration'),
-                )
-                .forEach((child) => child.destroy());
+    /**
+     * 创建视差背景
+     */
+    private createParallaxBackground(): void {
+        // 天空 (最远)
+        this.sky = this.add.tileSprite(
+            0,
+            0,
+            GAME_WIDTH,
+            GAME_HEIGHT,
+            ASSETS.SKY_BACKGROUND,
+        );
+        this.sky.setOrigin(0, 0);
+        this.sky.setScrollFactor(0);
+        this.sky.setDepth(DEPTH.BACKGROUND);
 
-            // 重新生成
-            this.spawnDecorations();
-        });
+        // 远山 (中远)
+        this.mountains = this.add.tileSprite(
+            0,
+            0,
+            GAME_WIDTH,
+            GAME_HEIGHT,
+            ASSETS.MOUNTAINS_BACKGROUND,
+        );
+        this.mountains.setOrigin(0, 0);
+        this.mountains.setScrollFactor(0);
+        this.mountains.setDepth(DEPTH.BACKGROUND + 1);
+
+        // 树林 (近景)
+        this.trees = this.add.tileSprite(
+            0,
+            0,
+            GAME_WIDTH,
+            GAME_HEIGHT,
+            ASSETS.TREES_BACKGROUND,
+        );
+        this.trees.setOrigin(0, 0);
+        this.trees.setScrollFactor(0);
+        this.trees.setDepth(DEPTH.BACKGROUND + 2);
     }
 
     /**
@@ -220,8 +240,12 @@ export class GameScene extends Phaser.Scene {
             ) as Phaser.Physics.Arcade.Sprite;
 
             tile.setScale(0.5);
+            tile.setDepth(DEPTH.TILEMAP); // 确保在背景之上
             tile.refreshBody();
         }
+        console.log(
+            `[GameScene] Created platform at (${x}, ${y}) with length ${length}`,
+        );
     }
 
     /**
@@ -361,11 +385,10 @@ export class GameScene extends Phaser.Scene {
 
         // 暴击判定
         const isCritical = Math.random() < playerEntity.criticalChance;
+        const currentDamage = playerEntity.getCurrentDamage();
         const finalDamage = isCritical
-            ? Math.round(
-                  playerEntity.attackDamage * playerEntity.criticalMultiplier,
-              )
-            : playerEntity.attackDamage;
+            ? Math.round(currentDamage * playerEntity.criticalMultiplier)
+            : currentDamage;
 
         // 触发屏幕震动（暴击时使用重击震动）
         CameraShake.shake(
@@ -386,8 +409,8 @@ export class GameScene extends Phaser.Scene {
             console.log(`[Attack] CRITICAL HIT! Damage: ${finalDamage}`);
         }
 
-        // 顿帧效果 - 暂时屏蔽，因为会导致卡死
-        // HitStop.freeze(this, isCritical ? 16 : 8);
+        // 顿帧效果
+        HitStop.freeze(this, isCritical ? 16 : 8);
 
         enemyEntity.takeDamage(finalDamage);
         playerEntity.hasHitThisAttack = true;
@@ -498,7 +521,7 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
         // 设置相机边界
-        this.cameras.main.setBounds(0, 0, GAME_WIDTH * 3, GAME_HEIGHT);
+        this.cameras.main.setBounds(0, 0, 3200, GAME_HEIGHT);
 
         // 设置死区（玩家可以在屏幕中心附近移动而相机不跟随）
         this.cameras.main.setDeadzone(200, 100);
@@ -566,6 +589,11 @@ export class GameScene extends Phaser.Scene {
         // 更新玩家
         this.player.update(time, delta);
 
+        // 检查胜利条件
+        if (this.player.x > 3000) {
+            this.scene.start(SCENES.WIN);
+        }
+
         // 更新所有敌人
         this.enemies.getChildren().forEach((enemy) => {
             (enemy as SkeletonEnemy).update(time, delta, this.player);
@@ -590,9 +618,18 @@ export class GameScene extends Phaser.Scene {
         }
 
         // 更新背景视差
-        if (this.background) {
-            this.background.tilePositionX = this.cameras.main.scrollX * 0.1;
+        if (this.sky) {
+            this.sky.tilePositionX = this.cameras.main.scrollX * 0.1;
         }
+        if (this.mountains) {
+            this.mountains.tilePositionX = this.cameras.main.scrollX * 0.2;
+        }
+        if (this.trees) {
+            this.trees.tilePositionX = this.cameras.main.scrollX * 0.5;
+        }
+
+        // 调试：打印玩家坐标
+        // console.log(`Player X: ${this.player.x}`);
     }
 
     /**
@@ -630,12 +667,12 @@ export class GameScene extends Phaser.Scene {
                     // 暴击判定
                     const isCritical =
                         Math.random() < this.player.criticalChance;
+                    const currentDamage = this.player.getCurrentDamage();
                     const finalDamage = isCritical
                         ? Math.round(
-                              this.player.attackDamage *
-                                  this.player.criticalMultiplier,
+                              currentDamage * this.player.criticalMultiplier,
                           )
-                        : this.player.attackDamage;
+                        : currentDamage;
 
                     // 触发屏幕震动（暴击时使用重击震动）
                     CameraShake.shake(
@@ -704,6 +741,14 @@ export class GameScene extends Phaser.Scene {
                     );
                 }
             }
+        });
+    }
+    /**
+     * 处理玩家死亡
+     */
+    private handlePlayerDeath(): void {
+        this.time.delayedCall(2000, () => {
+            this.scene.start(SCENES.GAME_OVER);
         });
     }
 }

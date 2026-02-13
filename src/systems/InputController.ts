@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { CONTROLS } from '../utils/Constants';
 
 export class InputController {
-    private scene: Phaser.Scene;
+    // private scene: Phaser.Scene; // Unused
 
     // 按键引用
     public keys: {
@@ -20,7 +20,7 @@ export class InputController {
     };
 
     constructor(scene: Phaser.Scene) {
-        this.scene = scene;
+        // this.scene = scene; // Unused
 
         const keyboard = scene.input.keyboard;
         if (!keyboard) {

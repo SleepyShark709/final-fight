@@ -100,6 +100,14 @@ export class BootScene extends Phaser.Scene {
             ASSETS.SKY_BACKGROUND,
             'assets/backgrounds/sky_parallax.png',
         );
+        this.load.image(
+            ASSETS.MOUNTAINS_BACKGROUND,
+            'assets/backgrounds/mountains.png',
+        );
+        this.load.image(
+            ASSETS.TREES_BACKGROUND,
+            'assets/backgrounds/trees.png',
+        );
     }
 
     /**

@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import {
     PLAYER_CONFIG,
     CONTROLS,
-    DEPTH,
+    // DEPTH, // Unused
     PLAYER_ATTACK_TYPES,
 } from '../utils/Constants';
 import { GameScene } from '../scenes/GameScene';
@@ -46,7 +46,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     private canAttack: boolean = true;
 
     // 面向方向 (1: 右, -1: 左)
-    private facingDirection: number = 1;
+    // private facingDirection: number = 1; // Unused
 
     // 输入按键
     private keys!: {
@@ -61,6 +61,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     private isDashing: boolean = false;
     private canDash: boolean = true;
     private dashDirection: number = 1;
+
+    // 连击系统
+    private comboCount: number = 0;
+    private lastAttackTime: number = 0;
+    private readonly COMBO_WINDOW: number = 1000; // 连击有效窗口期
+    private damageMultiplier: number = 1.0;
 
     // 调试模式
     private debugGraphics?: Phaser.GameObjects.Graphics;
@@ -152,6 +158,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
+     * 获取当前攻击伤害（包含连击加成）
+     */
+    public getCurrentDamage(): number {
+        return Math.round(this.attackDamage * this.damageMultiplier);
+    }
+
+    /**
      * 每帧更新
      */
     update(_time: number, _delta: number): void {
@@ -190,11 +203,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
         if (this.keys.left.isDown) {
             body.setVelocityX(-PLAYER_CONFIG.speed);
-            this.facingDirection = -1;
+            // this.facingDirection = -1; // Unused
             this.setFlipX(true);
         } else if (this.keys.right.isDown) {
             body.setVelocityX(PLAYER_CONFIG.speed);
-            this.facingDirection = 1;
+            // this.facingDirection = 1; // Unused
             this.setFlipX(false);
         } else {
             body.setVelocityX(0);
@@ -234,14 +247,31 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             // const dashDirection = this.flipX ? -1 : 1; // 面向方向
             // body.setVelocityX(dashDirection * dashSpeed);
 
-            // 随机选择攻击类型
-            const randomAttackType =
-                PLAYER_ATTACK_TYPES[
-                    Math.floor(Math.random() * PLAYER_ATTACK_TYPES.length)
-                ];
-            const attackAnimKey = randomAttackType.key;
+            // 连击逻辑
+            const currentTime = this.scene.time.now;
 
-            // 播放随机选择的攻击动画
+            if (currentTime - this.lastAttackTime < this.COMBO_WINDOW) {
+                this.comboCount++;
+                if (this.comboCount >= PLAYER_ATTACK_TYPES.length) {
+                    this.comboCount = 0; // 超过最大连击数，重置
+                }
+            } else {
+                this.comboCount = 0; // 超时，重置为第一击
+            }
+
+            this.lastAttackTime = currentTime;
+            console.log(`[Combos] Count: ${this.comboCount + 1}`);
+
+            // 根据连击数选择攻击方式
+            const attackType = PLAYER_ATTACK_TYPES[this.comboCount];
+            const attackAnimKey = attackType.key;
+
+            // 设置伤害倍率
+            // 1: 1.0x, 2: 1.2x, 3: 1.5x
+            const multipliers = [1.0, 1.2, 1.5];
+            this.damageMultiplier = multipliers[this.comboCount] || 1.0;
+
+            // 播放选择的攻击动画
             this.play(attackAnimKey, true);
 
             // 监听动画更新，在动画播放到一定进度时允许造成伤害
@@ -250,12 +280,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
                 frame: Phaser.Animations.AnimationFrame,
             ) => {
                 if (animation.key === attackAnimKey) {
-                    const progress = frame.index / randomAttackType.frames;
-                    // 当动画播放到 50% 时允许造成伤害
-                    if (progress >= 0.5 && !this.canDealDamage) {
-                        console.log(
-                            `[Player] Attack animation ${Math.round(progress * 100)}% - canDealDamage = true`,
-                        );
+                    const progress = frame.index / attackType.frames;
+                    // 当动画播放到 40% 时允许造成伤害 (稍微提前一点)
+                    if (progress >= 0.4 && !this.canDealDamage) {
                         this.canDealDamage = true;
                     }
                 }
@@ -422,11 +449,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
         // 发送死亡事件
         this.scene.events.emit('player-died');
-
-        // 延迟后重新加载场景
-        this.scene.time.delayedCall(2000, () => {
-            this.scene.scene.restart();
-        });
     }
 
     /**
