@@ -30,7 +30,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     public criticalChance: number; // 暴击率
     public criticalMultiplier: number; // 暴击伤害倍率
     public isAttacking: boolean = false;
-    public hasHitThisAttack: boolean = false;
+    // 本次攻击已命中的敌人集合（支持多目标命中）
+    public hitEnemiesThisAttack: Set<Phaser.Physics.Arcade.Sprite> = new Set();
     public canDealDamage: boolean = false; // 是否可以造成伤害（动画播放到一定程度后才为true）
 
     // 受击硬直状态
@@ -62,11 +63,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     private canDash: boolean = true;
     private dashDirection: number = 1;
 
-    // 连击系统
-    private comboCount: number = 0;
+    // 攻击连击系统（控制动画序列 & 伤害倍率，基于按键）
+    public comboCount: number = 0;
     private lastAttackTime: number = 0;
     private readonly COMBO_WINDOW: number = 1000; // 连击有效窗口期
-    private damageMultiplier: number = 1.0;
+    public damageMultiplier: number = 1.0;
+
+    // 命中连击计数（用于 UI 显示，仅在实际命中敌人时递增）
+    public hitComboCount: number = 0;
+    private lastHitTime: number = 0;
+    private readonly HIT_COMBO_WINDOW: number = 1500; // 连击重置窗口
+    private comboResetTimer?: Phaser.Time.TimerEvent;
+
+    // 输入缓冲（攻击动画期间按下J，动画结束后自动触发）
+    private bufferedAttack: boolean = false;
+    private bufferedAttackTime: number = 0;
+    private readonly ATTACK_BUFFER_WINDOW: number = 200; // ms
 
     // 调试模式
     private debugGraphics?: Phaser.GameObjects.Graphics;
@@ -158,6 +170,35 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
+     * 命中敌人时调用 —— 更新命中连击数并通知 UI
+     * 与按键动画连击（comboCount）分离，只在实际打到敌人时才计数
+     */
+    public registerHit(): void {
+        const now = this.scene.time.now;
+
+        if (now - this.lastHitTime > this.HIT_COMBO_WINDOW) {
+            this.hitComboCount = 1; // 超时：新连击从 1 开始
+        } else {
+            this.hitComboCount++;
+        }
+
+        this.lastHitTime = now;
+        this.scene.events.emit('combo-count-changed', this.hitComboCount);
+
+        // 重置计时器：若超过窗口无新命中则归零（UI 自动淡出由 UIScene 处理）
+        if (this.comboResetTimer) {
+            this.comboResetTimer.remove(false);
+        }
+        this.comboResetTimer = this.scene.time.delayedCall(
+            this.HIT_COMBO_WINDOW,
+            () => {
+                this.hitComboCount = 0;
+                this.comboResetTimer = undefined;
+            },
+        );
+    }
+
+    /**
      * 获取当前攻击伤害（包含连击加成）
      */
     public getCurrentDamage(): number {
@@ -176,6 +217,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // 如果正在冲刺，不处理其他输入
         if (this.isDashing) return;
 
+        // 捕获攻击输入缓冲（即使在攻击动画期间也要捕获）
+        if (Phaser.Input.Keyboard.JustDown(this.keys.attack)) {
+            this.bufferedAttack = true;
+            this.bufferedAttackTime = this.scene.time.now;
+        }
+
         // 如果正在攻击或受伤，不处理移动
         if (this.isAttacking || this.currentState === PlayerState.HURT) return;
 
@@ -185,7 +232,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // 处理跳跃输入
         this.handleJump();
 
-        // 处理攻击输入
+        // 处理攻击输入（含缓冲）
         this.handleAttack();
 
         // 更新动画状态
@@ -215,7 +262,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
-     * 处理跳跃
+     * 处理跳跃（可变高度：短按 = 小跳，长按 = 满跳）
      */
     private handleJump(): void {
         const body = this.body as Phaser.Physics.Arcade.Body;
@@ -224,20 +271,35 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             body.setVelocityY(-PLAYER_CONFIG.jumpForce);
             this.currentState = PlayerState.JUMP;
         }
+
+        // 松开跳跃键时，如果仍在上升阶段则削减速度（实现小跳）
+        if (Phaser.Input.Keyboard.JustUp(this.keys.jump) && body.velocity.y < 0) {
+            body.setVelocityY(body.velocity.y * 0.5);
+        }
     }
 
     /**
-     * 处理攻击
+     * 处理攻击（支持输入缓冲）
      */
     private handleAttack(): void {
+        // 清除超时的缓冲输入
         if (
-            Phaser.Input.Keyboard.JustDown(this.keys.attack) &&
-            this.canAttack
+            this.bufferedAttack &&
+            this.scene.time.now - this.bufferedAttackTime > this.ATTACK_BUFFER_WINDOW
         ) {
-            console.log('[Player] J key pressed - Attack starting!');
+            this.bufferedAttack = false;
+        }
+
+        const shouldAttack =
+            this.bufferedAttack ||
+            Phaser.Input.Keyboard.JustDown(this.keys.attack);
+
+        if (shouldAttack && this.canAttack) {
+            this.bufferedAttack = false; // 消耗缓冲
+            console.log('[Player] Attack starting!');
             this.isAttacking = true;
             this.canAttack = false;
-            this.hasHitThisAttack = false; // 重置命中标记
+            this.hitEnemiesThisAttack.clear(); // 重置命中集合
             this.canDealDamage = false; // 攻击开始时，不能造成伤害
             this.currentState = PlayerState.ATTACK;
 
@@ -260,8 +322,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             }
 
             this.lastAttackTime = currentTime;
-            console.log(`[Combos] Count: ${this.comboCount + 1}`);
-
             // 根据连击数选择攻击方式
             const attackType = PLAYER_ATTACK_TYPES[this.comboCount];
             const attackAnimKey = attackType.key;
@@ -305,7 +365,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
                             console.log('[Player] Attack state reset');
                             this.isAttacking = false;
                             this.canDealDamage = false;
-                            this.hasHitThisAttack = false;
+                            this.hitEnemiesThisAttack.clear();
                         });
                     }
                 },
@@ -314,11 +374,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             // 攻击冷却
             this.scene.time.delayedCall(PLAYER_CONFIG.attackCooldown, () => {
                 this.canAttack = true;
-            });
-        } else if (Phaser.Input.Keyboard.JustDown(this.keys.attack)) {
-            console.log('[Player] J pressed but attack blocked:', {
-                isAttacking: this.isAttacking,
-                canAttack: this.canAttack,
             });
         }
     }
@@ -556,8 +611,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             console.log('[Dash] Interrupting attack');
             this.isAttacking = false;
             this.canDealDamage = false;
-            this.hasHitThisAttack = false;
-            // 可以选择停止当前动画或保持当前帧
+            this.hitEnemiesThisAttack.clear();
         }
 
         // 禁用与敌人的碰撞（穿越敌人）

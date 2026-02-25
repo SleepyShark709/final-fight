@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import electron from 'vite-plugin-electron/simple';
+import { cpSync } from 'fs';
 
 export default defineConfig({
     base: './',
@@ -12,6 +13,14 @@ export default defineConfig({
                 input: 'electron/preload.ts',
             },
         }),
+        {
+            name: 'copy-game-assets',
+            apply: 'build' as const,
+            closeBundle() {
+                cpSync('assets', 'dist/assets', { recursive: true });
+                console.log('[copy-game-assets] Copied assets/ → dist/assets/');
+            },
+        },
     ],
     build: {
         outDir: 'dist',

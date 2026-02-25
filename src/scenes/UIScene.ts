@@ -24,6 +24,12 @@ export class UIScene extends Phaser.Scene {
     // 暂停菜单容器
     private pauseMenu!: Phaser.GameObjects.Container;
 
+    // 连击计数器
+    private comboContainer!: Phaser.GameObjects.Container;
+    private comboCountText!: Phaser.GameObjects.Text;
+    private comboLabelText!: Phaser.GameObjects.Text;
+    private comboHideTimer?: Phaser.Time.TimerEvent;
+
     // 玩家引用
     private player!: Player;
 
@@ -42,6 +48,9 @@ export class UIScene extends Phaser.Scene {
         // 创建暂停菜单
         this.createPauseMenu();
 
+        // 创建连击计数器
+        this.createComboCounter();
+
         // 监听游戏场景的玩家创建事件
         const gameScene = this.scene.get(SCENES.GAME) as any;
 
@@ -59,6 +68,11 @@ export class UIScene extends Phaser.Scene {
             this.healthBar.update(this.player.health, this.player.maxHealth);
         });
 
+        // 监听连击事件
+        gameScene.events.on('combo-count-changed', (count: number) => {
+            this.showCombo(count);
+        });
+
         // 监听暂停事件
         this.events.on('show-pause-menu', () => {
             this.pauseMenu.setVisible(true);
@@ -71,6 +85,80 @@ export class UIScene extends Phaser.Scene {
         // 背包快捷键
         this.input.keyboard?.on(`keydown-${CONTROLS.INVENTORY}`, () => {
             this.inventory.toggle();
+        });
+    }
+
+    /**
+     * 创建连击计数器（右侧屏幕）
+     */
+    private createComboCounter(): void {
+        const x = GAME_WIDTH - 80;
+        const y = GAME_HEIGHT / 2 - 30;
+
+        this.comboContainer = this.add.container(x, y);
+        this.comboContainer.setDepth(DEPTH.UI + 5);
+        this.comboContainer.setAlpha(0);
+
+        // 连击数数字（大字）
+        this.comboCountText = this.add.text(0, 0, '0', {
+            fontSize: '52px',
+            fontFamily: 'Arial Black, Arial',
+            color: '#ffdd00',
+            stroke: '#882200',
+            strokeThickness: 6,
+        });
+        this.comboCountText.setOrigin(0.5);
+
+        // "HIT" 标签（小字）
+        this.comboLabelText = this.add.text(0, 36, 'HIT', {
+            fontSize: '18px',
+            fontFamily: 'Arial Black, Arial',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 3,
+        });
+        this.comboLabelText.setOrigin(0.5);
+
+        this.comboContainer.add([this.comboCountText, this.comboLabelText]);
+    }
+
+    /**
+     * 显示连击数
+     */
+    private showCombo(count: number): void {
+        // 更新数字
+        this.comboCountText.setText(String(count));
+
+        // 根据连击数变色
+        if (count >= 5) {
+            this.comboCountText.setColor('#ff4400');
+        } else if (count >= 3) {
+            this.comboCountText.setColor('#ff8800');
+        } else {
+            this.comboCountText.setColor('#ffdd00');
+        }
+
+        // 弹出动画
+        this.comboContainer.setAlpha(1);
+        this.comboContainer.setScale(1.3);
+        this.tweens.add({
+            targets: this.comboContainer,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 120,
+            ease: 'Back.Out',
+        });
+
+        // 重置自动隐藏计时器
+        if (this.comboHideTimer) {
+            this.comboHideTimer.remove(false);
+        }
+        this.comboHideTimer = this.time.delayedCall(1800, () => {
+            this.tweens.add({
+                targets: this.comboContainer,
+                alpha: 0,
+                duration: 300,
+            });
         });
     }
 

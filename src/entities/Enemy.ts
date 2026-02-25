@@ -4,6 +4,7 @@
  */
 import Phaser from 'phaser';
 import { Player } from './Player';
+import { EffectsManager } from '../utils/EffectsManager';
 
 // 敌人状态枚举
 export enum EnemyState {
@@ -58,9 +59,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     // 预备攻击状态（防止动画被覆盖）
     protected isPreparing: boolean = false;
 
-    // 血条UI
-    protected healthBarBg!: Phaser.GameObjects.Graphics;
-    protected healthBarFill!: Phaser.GameObjects.Graphics;
+    // 血条UI（使用 Rectangle 代替 Graphics，避免每帧 clear+fillRect 的开销）
+    protected healthBarBg!: Phaser.GameObjects.Rectangle;
+    protected healthBarFill!: Phaser.GameObjects.Rectangle;
 
     // 调试模式
     protected debugGraphics?: Phaser.GameObjects.Graphics;
@@ -289,80 +290,61 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
      */
     protected abstract updateAnimation(): void;
 
+    private static readonly BAR_WIDTH = 40;
+    private static readonly BAR_HEIGHT = 4;
+    private static readonly BAR_OFFSET_Y = -40;
+
     /**
-     * 创建血条
+     * 创建血条（使用 Rectangle，只需 setPosition/setSize，无需每帧重绘）
      */
     private createHealthBar(): void {
-        const barWidth = 40;
-        const barHeight = 4;
-        const offsetY = -40; // 头顶上方
+        const { BAR_WIDTH, BAR_HEIGHT, BAR_OFFSET_Y } = Enemy;
 
-        // 背景条（黑色）
-        this.healthBarBg = this.scene.add.graphics();
-        this.healthBarBg.fillStyle(0x000000, 0.8);
-        this.healthBarBg.fillRect(
-            this.x - barWidth / 2,
-            this.y + offsetY,
-            barWidth,
-            barHeight,
+        this.healthBarBg = this.scene.add.rectangle(
+            this.x - BAR_WIDTH / 2,
+            this.y + BAR_OFFSET_Y,
+            BAR_WIDTH,
+            BAR_HEIGHT,
+            0x000000,
+            0.8,
         );
+        this.healthBarBg.setOrigin(0, 0);
         this.healthBarBg.setDepth(1000);
 
-        // 前景条（绿色->黄色->红色）
-        this.healthBarFill = this.scene.add.graphics();
-        this.updateHealthBar();
-    }
-
-    /**
-     * 更新血条显示
-     */
-    private updateHealthBar(): void {
-        const barWidth = 40;
-        const barHeight = 4;
-        const offsetY = -40;
-
-        const healthPercent = Math.max(0, this.health / this.maxHealth);
-        const fillWidth = barWidth * healthPercent;
-
-        // 根据血量百分比改变颜色
-        let color = 0x00ff00; // 绿色
-        if (healthPercent < 0.3) {
-            color = 0xff0000; // 红色
-        } else if (healthPercent < 0.6) {
-            color = 0xffff00; // 黄色
-        }
-
-        this.healthBarFill.clear();
-        this.healthBarFill.fillStyle(color, 1);
-        this.healthBarFill.fillRect(
-            this.x - barWidth / 2,
-            this.y + offsetY,
-            fillWidth,
-            barHeight,
+        this.healthBarFill = this.scene.add.rectangle(
+            this.x - BAR_WIDTH / 2,
+            this.y + BAR_OFFSET_Y,
+            BAR_WIDTH,
+            BAR_HEIGHT,
+            0x00ff00,
         );
+        this.healthBarFill.setOrigin(0, 0);
         this.healthBarFill.setDepth(1001);
     }
 
     /**
-     * 更新血条位置
+     * 更新血条颜色（受伤时调用）
+     */
+    protected updateHealthBar(): void {
+        const healthPercent = Math.max(0, this.health / this.maxHealth);
+        const fillWidth = Math.max(1, Enemy.BAR_WIDTH * healthPercent);
+
+        let color = 0x00ff00;
+        if (healthPercent < 0.3) color = 0xff0000;
+        else if (healthPercent < 0.6) color = 0xffff00;
+
+        this.healthBarFill.setSize(fillWidth, Enemy.BAR_HEIGHT);
+        this.healthBarFill.setFillStyle(color);
+    }
+
+    /**
+     * 每帧更新血条位置（只需 setPosition，无重绘开销）
      */
     private updateHealthBarPosition(): void {
-        const barWidth = 40;
-        const barHeight = 4;
-        const offsetY = -40;
-
-        // 重绘血条背景
-        this.healthBarBg.clear();
-        this.healthBarBg.fillStyle(0x000000, 0.8);
-        this.healthBarBg.fillRect(
-            this.x - barWidth / 2,
-            this.y + offsetY,
-            barWidth,
-            barHeight,
-        );
-
-        // 重绘血条前景（调用updateHealthBar会处理）
-        this.updateHealthBar();
+        const x = this.x - Enemy.BAR_WIDTH / 2;
+        const y = this.y + Enemy.BAR_OFFSET_Y;
+        this.healthBarBg.setPosition(x, y);
+        this.healthBarFill.setPosition(x, y);
     }
 
     /**
@@ -410,6 +392,18 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
             body.setVelocityY(-80);
         }
 
+        // Squash/Stretch 击退形变：横向拉伸 + 纵向压缩
+        const sx = this.scaleX;
+        const sy = this.scaleY;
+        this.setScale(sx * 1.35, sy * 0.7);
+        this.scene.tweens.add({
+            targets: this,
+            scaleX: sx,
+            scaleY: sy,
+            duration: 180,
+            ease: 'Power2',
+        });
+
         if (this.health <= 0) {
             console.log('[Enemy] Dying...');
             this.die();
@@ -436,11 +430,14 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
             this.debugText = undefined;
         }
 
+        // 死亡粒子爆散
+        EffectsManager.createDeathParticles(this.scene, this.x, this.y - 20);
+
         // 渐隐消失
         this.scene.tweens.add({
             targets: this,
             alpha: 0,
-            duration: 500,
+            duration: 400,
             onComplete: () => {
                 this.destroy();
             },

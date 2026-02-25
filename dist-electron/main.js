@@ -17,7 +17,7 @@ function o() {
     },
     autoHideMenuBar: !0
     // Hide menu bar on Windows/Linux
-  }), a ? n.loadURL(process.env.VITE_DEV_SERVER_URL) : n.loadFile(t.join(__dirname, "../dist/index.html")), n.on("closed", () => {
+  }), a ? n.loadURL(process.env.VITE_DEV_SERVER_URL) : n.loadFile(t.join(e.getAppPath(), "dist", "index.html")), n.on("closed", () => {
     n = null;
   });
 }

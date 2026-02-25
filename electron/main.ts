@@ -30,8 +30,11 @@ function createWindow() {
         mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL as string);
         // mainWindow.webContents.openDevTools();
     } else {
-        // Load from built assets
-        mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+        // Load from built assets.
+        // Use app.getAppPath() instead of __dirname because __dirname is
+        // undefined in ES modules and path.join(__dirname, ..) silently
+        // fails, producing a blank window in packaged builds.
+        mainWindow.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
     }
 
     mainWindow.on('closed', () => {

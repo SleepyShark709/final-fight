@@ -8,7 +8,9 @@ import {
     ASSETS,
     ANIMATION_FRAMES,
     PLAYER_ATTACK_TYPES,
+    ENEMY_CONFIG,
 } from '../utils/Constants';
+import { DECORATIONS } from '../systems/DecorationManager';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -86,8 +88,12 @@ export class BootScene extends Phaser.Scene {
             );
         }
 
-        // 加载环境Tiles (1-100)
-        for (let i = 1; i <= 100; i++) {
+        // 加载环境Tiles（只加载装饰物配置中实际用到的索引）
+        const usedTileIndices = new Set<number>();
+        Object.values(DECORATIONS).forEach((config) => {
+            config.tiles.forEach((idx) => usedTileIndices.add(idx));
+        });
+        for (const i of usedTileIndices) {
             const filename = i.toString().padStart(4, '0') + '.png';
             this.load.image(
                 `${ASSETS.ENV_TILE}-${i}`,
@@ -170,6 +176,9 @@ export class BootScene extends Phaser.Scene {
      * 资源加载完成后创建动画并跳转
      */
     create(): void {
+        // 用代码生成投射物贴图（蓝色子弹/箭矢）
+        this.createProceduralTextures();
+
         // 创建所有动画
         this.createAnimations();
 
@@ -177,6 +186,20 @@ export class BootScene extends Phaser.Scene {
         this.time.delayedCall(500, () => {
             this.scene.start(SCENES.MENU);
         });
+    }
+
+    /**
+     * 用 Graphics 生成运行时贴图（无需外部素材）
+     */
+    private createProceduralTextures(): void {
+        // 投射物贴图：蓝色发光箭矢（12x6 px）
+        const g = this.add.graphics();
+        g.fillStyle(ENEMY_CONFIG.archer.projectileColor, 1);
+        g.fillRoundedRect(0, 0, 14, 6, 2);
+        g.fillStyle(0xffffff, 0.6);
+        g.fillRoundedRect(2, 1, 6, 2, 1); // 高光
+        g.generateTexture(ASSETS.PROJECTILE, 14, 6);
+        g.destroy();
     }
 
     /**

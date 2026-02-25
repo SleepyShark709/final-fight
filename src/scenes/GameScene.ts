@@ -10,10 +10,14 @@ import {
     DEPTH,
     TILE_SIZE,
     ASSETS,
-    // PLAYER_CONFIG, // Unused
+    PLAYER_CONFIG,
+    ENEMY_CONFIG,
 } from '../utils/Constants';
 import { Player } from '../entities/Player';
 import { SkeletonEnemy } from '../entities/SkeletonEnemy';
+import { ArcherEnemy } from '../entities/ArcherEnemy';
+import { ShieldEnemy } from '../entities/ShieldEnemy';
+import { FlyingEnemy } from '../entities/FlyingEnemy';
 import { InputController } from '../systems/InputController';
 import { CameraShake, ShakeIntensity } from '../utils/CameraShake';
 import { DamageText, DamageType } from '../ui/DamageText';
@@ -21,6 +25,7 @@ import { PlayerStatsPanel } from '../ui/PlayerStatsPanel';
 import { DecorationManager } from '../systems/DecorationManager';
 import { LEVEL_1_DECORATIONS } from '../config/LevelConfig';
 import { HitStop } from '../utils/HitStop';
+import { EffectsManager } from '../utils/EffectsManager';
 
 export class GameScene extends Phaser.Scene {
     // 玩家实例
@@ -257,24 +262,53 @@ export class GameScene extends Phaser.Scene {
     }
 
     /**
-     * 创建敌人
+     * 创建敌人（骷髅 + 弓箭手 + 盾兵 + 飞行敌人）
      */
     private createEnemies(): void {
-        // ✅ 使用physics.add.group创建物理组，才能正确处理overlap
         this.enemies = this.physics.add.group();
 
-        // 在不同位置生成骷髅敌人
-        const enemyPositions = [
+        // 骷髅：近战基础敌人
+        const skeletonPositions = [
             { x: 400, y: GAME_HEIGHT - 150 },
-            { x: 700, y: GAME_HEIGHT - 300 },
             { x: 1000, y: GAME_HEIGHT - 150 },
-            { x: 1300, y: GAME_HEIGHT - 350 },
             { x: 1600, y: GAME_HEIGHT - 150 },
+        ];
+        skeletonPositions.forEach((pos) => {
+            const enemy = new SkeletonEnemy(this, pos.x, pos.y);
+            enemy.setDepth(DEPTH.ENEMIES);
+            this.enemies.add(enemy);
+        });
+
+        // 弓箭手：远程敌人，蓝色
+        const archerPositions = [
+            { x: 700, y: GAME_HEIGHT - 300 },
             { x: 1900, y: GAME_HEIGHT - 330 },
         ];
+        archerPositions.forEach((pos) => {
+            const enemy = new ArcherEnemy(this, pos.x, pos.y);
+            enemy.setDepth(DEPTH.ENEMIES);
+            this.enemies.add(enemy);
+        });
 
-        enemyPositions.forEach((pos) => {
-            const enemy = new SkeletonEnemy(this, pos.x, pos.y);
+        // 盾兵：正面格挡，金色
+        const shieldPositions = [
+            { x: 1300, y: GAME_HEIGHT - 350 },
+            { x: 2300, y: GAME_HEIGHT - 150 },
+        ];
+        shieldPositions.forEach((pos) => {
+            const enemy = new ShieldEnemy(this, pos.x, pos.y);
+            enemy.setDepth(DEPTH.ENEMIES);
+            this.enemies.add(enemy);
+        });
+
+        // 飞行敌人：空中俯冲，紫色
+        const flyingPositions = [
+            { x: 600, y: GAME_HEIGHT - 150 },  // 会自动飞到 floatHeight 高度
+            { x: 1500, y: GAME_HEIGHT - 150 },
+            { x: 2600, y: GAME_HEIGHT - 150 },
+        ];
+        flyingPositions.forEach((pos) => {
+            const enemy = new FlyingEnemy(this, pos.x, pos.y);
             enemy.setDepth(DEPTH.ENEMIES);
             this.enemies.add(enemy);
         });
@@ -284,10 +318,6 @@ export class GameScene extends Phaser.Scene {
      * 设置碰撞检测
      */
     private setupCollisions(): void {
-        console.log('[Debug] Setting up collisions');
-        console.log('[Debug] Player:', this.player);
-        console.log('[Debug] Enemies:', this.enemies);
-        console.log('[Debug] Enemies children:', this.enemies?.getChildren());
 
         // 玩家与平台碰撞
         this.physics.add.collider(this.player, this.platforms);
@@ -303,32 +333,23 @@ export class GameScene extends Phaser.Scene {
             undefined,
             this,
         );
-        console.log('[Debug] Collider created:', this.playerEnemyCollider);
 
         // 玩家攻击判定（使用overlap，无物理推力）
-        const playerAttackOverlap = this.physics.add.overlap(
+        this.physics.add.overlap(
             this.player,
             this.enemies,
             this.handlePlayerAttackOverlap,
             undefined,
             this,
         );
-        console.log(
-            '[Debug] Player attack overlap created:',
-            playerAttackOverlap,
-        );
 
         // 敌人攻击判定（使用overlap，无物理推力）
-        const enemyAttackOverlap = this.physics.add.overlap(
+        this.physics.add.overlap(
             this.enemies,
             this.player,
             this.handleEnemyAttackOverlap,
             undefined,
             this,
-        );
-        console.log(
-            '[Debug] Enemy attack overlap created:',
-            enemyAttackOverlap,
         );
     }
 
@@ -336,52 +357,24 @@ export class GameScene extends Phaser.Scene {
      * 处理玩家攻击overlap（无物理推力）
      */
     private handlePlayerAttackOverlap = (player: any, enemy: any): void => {
-        console.log('[Debug] Overlap triggered!'); // 1. 确认overlap被调用
-
         const playerEntity = player as Player;
         const enemyEntity = enemy as SkeletonEnemy;
 
-        if (enemyEntity.isDead) {
-            console.log('[Debug] Enemy is dead, skipping');
-            return;
-        }
-
-        if (!playerEntity.isAttacking) {
-            console.log('[Debug] Player not attacking, skipping');
-            return;
-        }
-
-        if (!playerEntity.canDealDamage) {
-            console.log('[Debug] Player cannot deal damage yet, skipping');
-            return;
-        }
-
-        console.log('[Debug] Player IS attacking!'); // 确认攻击状态
+        if (enemyEntity.isDead) return;
+        if (!playerEntity.isAttacking) return;
+        if (!playerEntity.canDealDamage) return;
 
         // 检查攻击方向是否正确
         const isAttackingTowardsEnemy =
             (playerEntity.flipX && enemyEntity.x < playerEntity.x) ||
             (!playerEntity.flipX && enemyEntity.x > playerEntity.x);
 
-        console.log('[Debug] Attack direction check:', {
-            playerFlipX: playerEntity.flipX,
-            playerX: playerEntity.x,
-            enemyX: enemyEntity.x,
-            isTowards: isAttackingTowardsEnemy,
-        });
+        if (!isAttackingTowardsEnemy) return;
 
-        if (!isAttackingTowardsEnemy) {
-            console.log('[Debug] Wrong attack direction, skipping');
+        // 防止对同一敌人重复命中（允许命中多个不同敌人）
+        if (playerEntity.hitEnemiesThisAttack.has(enemyEntity)) {
             return;
         }
-
-        // 防止重复伤害：每次攻击只能命中一次
-        if (playerEntity.hasHitThisAttack) {
-            console.log('[Debug] Already hit this attack, skipping');
-            return;
-        }
-
-        console.log('[Attack] Player hit enemy'); // 成功！
 
         // 暴击判定
         const isCritical = Math.random() < playerEntity.criticalChance;
@@ -409,57 +402,44 @@ export class GameScene extends Phaser.Scene {
             console.log(`[Attack] CRITICAL HIT! Damage: ${finalDamage}`);
         }
 
+        // 斩击特效
+        const slashX = (playerEntity.x + enemyEntity.x) / 2;
+        const slashY = (playerEntity.y + enemyEntity.y) / 2 - 10;
+        EffectsManager.createSlashEffect(this, slashX, slashY, !playerEntity.flipX, isCritical);
+
+        // 命中粒子
+        EffectsManager.createHitParticles(this, enemyEntity.x, enemyEntity.y - 20, isCritical);
+
+        if (isCritical) {
+            EffectsManager.createCriticalFlash(this);
+        }
+
         // 顿帧效果
         HitStop.freeze(this, isCritical ? 16 : 8);
 
-        enemyEntity.takeDamage(finalDamage);
-        playerEntity.hasHitThisAttack = true;
+        const knockbackDir = enemyEntity.x > playerEntity.x ? 1 : -1;
+        enemyEntity.takeDamage(finalDamage, knockbackDir);
+        playerEntity.hitEnemiesThisAttack.add(enemyEntity);
+        playerEntity.registerHit();
     };
 
     /**
      * 处理敌人攻击overlap（敌人攻击玩家）
      */
     private handleEnemyAttackOverlap = (enemy: any, player: any): void => {
-        console.log('[Debug] Enemy attack overlap triggered');
-
         const enemyEntity = enemy as SkeletonEnemy;
         const playerEntity = player as Player;
 
-        if (enemyEntity.isDead) {
-            console.log('[Debug] Enemy is dead, skipping');
-            return;
-        }
-
-        if (playerEntity.isInvincible) {
-            console.log('[Debug] Player is invincible, skipping');
-            return;
-        }
-
-        if (!enemyEntity.isAttacking) {
-            console.log('[Debug] Enemy not attacking, skipping');
-            return;
-        }
-
-        console.log('[Debug] Enemy IS attacking!');
+        if (enemyEntity.isDead) return;
+        if (playerEntity.isInvincible) return;
+        if (!enemyEntity.isAttacking) return;
 
         // 检查攻击方向是否正确
         const isAttackingTowardsPlayer =
             (enemyEntity.flipX && playerEntity.x < enemyEntity.x) ||
             (!enemyEntity.flipX && playerEntity.x > enemyEntity.x);
 
-        console.log('[Debug] Enemy attack direction check:', {
-            enemyFlipX: enemyEntity.flipX,
-            enemyX: enemyEntity.x,
-            playerX: playerEntity.x,
-            isTowards: isAttackingTowardsPlayer,
-        });
-
-        if (!isAttackingTowardsPlayer) {
-            console.log('[Debug] Wrong enemy attack direction, skipping');
-            return;
-        }
-
-        console.log('[Attack] Enemy hit player!');
+        if (!isAttackingTowardsPlayer) return;
 
         // 触发屏幕震动（中击 - 被敌人攻击比玩家攻击震动更强）
         CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
@@ -498,8 +478,6 @@ export class GameScene extends Phaser.Scene {
             playerBody.bottom <= enemyBody.top + 20;
 
         if (isStomping) {
-            // 踩头成功
-            console.log('[Collision] Player stomping enemy');
             playerEntity.bounce();
             enemyEntity.takeDamage(playerEntity.attackDamage);
 
@@ -599,8 +577,11 @@ export class GameScene extends Phaser.Scene {
             (enemy as SkeletonEnemy).update(time, delta, this.player);
         });
 
-        // 基于距离的攻击检测（替代overlap，因为Collider会阻止重叠）
+        // 基于距离的攻击检测
         this.checkAttacksByDistance();
+
+        // 检测弓箭手投射物命中玩家
+        this.checkProjectileHits();
 
         // 更新调试信息
         if (this.isDebugMode) {
@@ -633,10 +614,10 @@ export class GameScene extends Phaser.Scene {
     }
 
     /**
-     * 基于距离的攻击检测
+     * 基于距离的攻击检测（使用 Constants 配置的范围）
      */
     private checkAttacksByDistance(): void {
-        const attackRange = 60; // 攻击距离范围
+        const playerAttackRange = PLAYER_CONFIG.attackRange + 30; // 稍微扩大以补偿重叠检测误差
 
         this.enemies.getChildren().forEach((enemy) => {
             const enemyEntity = enemy as SkeletonEnemy;
@@ -649,22 +630,18 @@ export class GameScene extends Phaser.Scene {
                 enemyEntity.y,
             );
 
-            // 玩家攻击敌人
+            // 玩家攻击敌人（多目标：每个敌人独立检测是否已被本次攻击命中）
             if (
                 this.player.isAttacking &&
-                this.player.canDealDamage && // 添加伤害判定条件
-                !this.player.hasHitThisAttack &&
-                distance < attackRange
+                this.player.canDealDamage &&
+                !this.player.hitEnemiesThisAttack.has(enemyEntity) &&
+                distance < playerAttackRange
             ) {
-                // 检查攻击方向
                 const isAttackingTowardsEnemy =
                     (this.player.flipX && enemyEntity.x < this.player.x) ||
                     (!this.player.flipX && enemyEntity.x > this.player.x);
 
                 if (isAttackingTowardsEnemy) {
-                    console.log('[Attack] Player hit enemy (distance check)');
-
-                    // 暴击判定
                     const isCritical =
                         Math.random() < this.player.criticalChance;
                     const currentDamage = this.player.getCurrentDamage();
@@ -674,7 +651,6 @@ export class GameScene extends Phaser.Scene {
                           )
                         : currentDamage;
 
-                    // 触发屏幕震动（暴击时使用重击震动）
                     CameraShake.shake(
                         this.cameras.main,
                         isCritical
@@ -682,7 +658,6 @@ export class GameScene extends Phaser.Scene {
                             : ShakeIntensity.LIGHT,
                     );
 
-                    // 显示伤害数字（暴击时使用特殊颜色）
                     DamageText.create(
                         this,
                         enemyEntity.x,
@@ -691,40 +666,43 @@ export class GameScene extends Phaser.Scene {
                         isCritical ? DamageType.CRITICAL : DamageType.NORMAL,
                     );
 
+                    // 斩击特效（在玩家与敌人之间）
+                    const slashX = (this.player.x + enemyEntity.x) / 2;
+                    const slashY = (this.player.y + enemyEntity.y) / 2 - 10;
+                    EffectsManager.createSlashEffect(this, slashX, slashY, !this.player.flipX, isCritical);
+
+                    // 命中粒子
+                    EffectsManager.createHitParticles(this, enemyEntity.x, enemyEntity.y - 20, isCritical);
+
+                    // 暴击闪白
                     if (isCritical) {
-                        console.log(
-                            `[Attack] CRITICAL HIT! Damage: ${finalDamage}`,
-                        );
+                        EffectsManager.createCriticalFlash(this);
                     }
 
-                    // 顿帧效果 - 暂时屏蔽，因为会导致卡死
-                    // HitStop.freeze(this, isCritical ? 16 : 8);
+                    // 顿帧效果（已修复deadlock）
+                    HitStop.freeze(this, isCritical ? 14 : 6);
 
-                    // 传递击退方向：敌人被击退的方向（远离玩家）
                     const knockbackDir = enemyEntity.x > this.player.x ? 1 : -1;
                     enemyEntity.takeDamage(finalDamage, knockbackDir);
-                    this.player.hasHitThisAttack = true;
+                    this.player.hitEnemiesThisAttack.add(enemyEntity);
+                    this.player.registerHit(); // 仅在实际命中时计入连击
                 }
             }
 
             // 敌人攻击玩家
+            const enemyAttackRange = ENEMY_CONFIG.skeleton.attackRange + 10;
             if (
                 enemyEntity.isAttacking &&
                 !this.player.isInvincible &&
-                distance < attackRange
+                distance < enemyAttackRange
             ) {
-                // 检查攻击方向
                 const isAttackingTowardsPlayer =
                     (enemyEntity.flipX && this.player.x < enemyEntity.x) ||
                     (!enemyEntity.flipX && this.player.x > enemyEntity.x);
 
                 if (isAttackingTowardsPlayer) {
-                    console.log('[Attack] Enemy hit player (distance check)');
-
-                    // 触发屏幕震动（中击）
                     CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
 
-                    // 显示伤害数字
                     DamageText.create(
                         this,
                         this.player.x,
@@ -743,6 +721,58 @@ export class GameScene extends Phaser.Scene {
             }
         });
     }
+    /**
+     * 检测弓箭手投射物命中玩家
+     */
+    private checkProjectileHits(): void {
+        if (this.player.isInvincible) return;
+
+        this.enemies.getChildren().forEach((enemy) => {
+            const archer = enemy as ArcherEnemy;
+            if (!(archer instanceof ArcherEnemy) || archer.isDead) return;
+
+            for (const proj of [...archer.projectiles]) {
+                if (!proj.active) {
+                    archer.destroyProjectile(proj);
+                    continue;
+                }
+
+                // 投射物超出世界边界时销毁
+                if (
+                    proj.x < 0 ||
+                    proj.x > 3200 ||
+                    proj.y < 0 ||
+                    proj.y > GAME_HEIGHT + 100
+                ) {
+                    archer.destroyProjectile(proj);
+                    continue;
+                }
+
+                // 简单的矩形碰撞检测
+                const dx = Math.abs(proj.x - this.player.x);
+                const dy = Math.abs(proj.y - this.player.y);
+                if (dx < 30 && dy < 35) {
+                    // 命中
+                    CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
+                    DamageText.create(
+                        this,
+                        this.player.x,
+                        this.player.y - 30,
+                        archer.attackDamage,
+                        DamageType.NORMAL,
+                    );
+                    const knockDir = proj.body
+                        ? (proj.body as Phaser.Physics.Arcade.Body).velocity.x > 0
+                            ? -1
+                            : 1
+                        : 0;
+                    this.player.takeDamage(archer.attackDamage, knockDir);
+                    archer.destroyProjectile(proj);
+                }
+            }
+        });
+    }
+
     /**
      * 处理玩家死亡
      */

@@ -60,6 +60,61 @@ export const ENEMY_CONFIG = {
         offsetX: 35, // X轴偏移
         offsetY: 15, // Y轴偏移
     },
+    archer: {
+        maxHealth: 30,
+        speed: 60,
+        attackDamage: 8,
+        attackRange: 280,       // 远程攻击范围
+        attackCooldown: 2500,
+        detectRange: 350,
+        patrolRange: 80,
+        scale: 1.0,
+        mass: 0.8,
+        knockbackForce: 80,
+        collisionWidth: 50,
+        collisionHeight: 60,
+        offsetX: 35,
+        offsetY: 15,
+        preferredDistance: 200, // 理想与玩家保持距离
+        minDistance: 140,       // 小于该距离时后退
+        projectileSpeed: 280,   // 投射物速度
+        projectileColor: 0x44aaff, // 投射物颜色
+    },
+    shield: {
+        maxHealth: 80,
+        speed: 60,
+        attackDamage: 15,
+        attackRange: 55,
+        attackCooldown: 2200,
+        detectRange: 200,
+        patrolRange: 80,
+        scale: 1.05,
+        mass: 2.2,              // 非常重，难以击退
+        knockbackForce: 60,
+        collisionWidth: 50,
+        collisionHeight: 60,
+        offsetX: 35,
+        offsetY: 15,
+        shieldDownDuration: 1800, // 攻击后盾牌放下的时间（ms）
+    },
+    flying: {
+        maxHealth: 25,
+        speed: 100,
+        attackDamage: 12,
+        attackRange: 55,
+        attackCooldown: 1500,
+        detectRange: 260,
+        patrolRange: 120,
+        scale: 0.85,
+        mass: 0.6,
+        knockbackForce: 120,
+        collisionWidth: 45,
+        collisionHeight: 50,
+        offsetX: 37,
+        offsetY: 15,
+        floatHeight: 110,       // 距地面高度（像素）
+        swoopSpeed: 250,        // 俯冲速度
+    },
 };
 
 // ===== 控制键位 =====
@@ -129,6 +184,9 @@ export const ASSETS = {
     ENEMY_SKELETON_IDLE: 'skeleton-idle',
     ENEMY_SKELETON_WALK: 'skeleton-walk',
     ENEMY_SKELETON_ATTACK: 'skeleton-attack',
+
+    // 投射物
+    PROJECTILE: 'projectile',
 
     // 地形
     TILESET_GRASS: 'tileset-grass',

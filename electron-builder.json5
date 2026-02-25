@@ -1,6 +1,7 @@
 {
     appId: 'com.shark.finalfightv2',
     productName: 'Final Fight V2',
+    asar: true,
     directories: {
         output: 'release',
     },
