@@ -10,6 +10,7 @@ import {
 } from '../utils/Constants';
 import { GameScene } from '../scenes/GameScene';
 import { WeaponBase } from '../combat/WeaponBase';
+import { WeaponFactory } from '../combat/WeaponFactory';
 import { SwordWeapon } from '../combat/weapons/SwordWeapon';
 
 // 玩家状态枚举
@@ -353,10 +354,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     /**
      * 装备新武器（策略替换）
+     * @param weaponOrId  WeaponBase 实例 或 武器ID字符串（如 'sword'、'fists'、'bow'）
      */
-    public equipWeapon(newWeapon: WeaponBase): void {
+    public equipWeapon(weaponOrId: WeaponBase | string): void {
         this.weapon.interruptAttack();
-        this.weapon = newWeapon;
+        if (typeof weaponOrId === 'string') {
+            this.weapon = WeaponFactory.create(weaponOrId, this.scene, this);
+        } else {
+            this.weapon = weaponOrId;
+        }
     }
 
     /**
