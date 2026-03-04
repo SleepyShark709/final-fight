@@ -14,8 +14,11 @@ export class InputController {
         right: Phaser.Input.Keyboard.Key;
         jump: Phaser.Input.Keyboard.Key;
         attack: Phaser.Input.Keyboard.Key;
-        skill: Phaser.Input.Keyboard.Key;
+        dash: Phaser.Input.Keyboard.Key;
+        weaponSkill: Phaser.Input.Keyboard.Key;
         inventory: Phaser.Input.Keyboard.Key;
+        map: Phaser.Input.Keyboard.Key;
+        interact: Phaser.Input.Keyboard.Key;
         pause: Phaser.Input.Keyboard.Key;
     };
 
@@ -33,8 +36,11 @@ export class InputController {
             right: keyboard.addKey(CONTROLS.RIGHT),
             jump: keyboard.addKey(CONTROLS.JUMP),
             attack: keyboard.addKey(CONTROLS.ATTACK),
-            skill: keyboard.addKey(CONTROLS.SKILL),
+            dash: keyboard.addKey(CONTROLS.DASH),
+            weaponSkill: keyboard.addKey(CONTROLS.WEAPON_SKILL),
             inventory: keyboard.addKey(CONTROLS.INVENTORY),
+            map: keyboard.addKey(CONTROLS.MAP),
+            interact: keyboard.addKey(CONTROLS.INTERACT),
             pause: keyboard.addKey(CONTROLS.PAUSE),
         };
     }
@@ -68,10 +74,17 @@ export class InputController {
     }
 
     /**
-     * 检查技能键是否刚按下
+     * 检查冲刺键是否刚按下
      */
-    public isSkillJustPressed(): boolean {
-        return Phaser.Input.Keyboard.JustDown(this.keys.skill);
+    public isDashJustPressed(): boolean {
+        return Phaser.Input.Keyboard.JustDown(this.keys.dash);
+    }
+
+    /**
+     * 检查武器技能键是否刚按下
+     */
+    public isWeaponSkillJustPressed(): boolean {
+        return Phaser.Input.Keyboard.JustDown(this.keys.weaponSkill);
     }
 
     /**

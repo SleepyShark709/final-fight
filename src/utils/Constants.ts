@@ -123,9 +123,12 @@ export const CONTROLS = {
     RIGHT: 'D',
     JUMP: 'K',
     ATTACK: 'J',
-    SKILL: 'L',
+    DASH: 'L',           // was SKILL — dash/dodge
+    WEAPON_SKILL: 'U',   // new — weapon special ability
     STATS: 'C', // 数值面板切换
     INVENTORY: 'I',
+    MAP: 'TAB',           // new — minimap toggle
+    INTERACT: 'W',        // new — NPC interaction in hub
     PAUSE: 'ESC',
     DEBUG: 'P', // 调试模式切换
 };

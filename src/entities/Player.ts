@@ -55,7 +55,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         right: Phaser.Input.Keyboard.Key;
         jump: Phaser.Input.Keyboard.Key;
         attack: Phaser.Input.Keyboard.Key;
-        skill: Phaser.Input.Keyboard.Key;
+        dash: Phaser.Input.Keyboard.Key;
+        weaponSkill: Phaser.Input.Keyboard.Key;
     };
 
     // 冲刺状态
@@ -135,7 +136,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             right: keyboard.addKey(CONTROLS.RIGHT),
             jump: keyboard.addKey(CONTROLS.JUMP),
             attack: keyboard.addKey(CONTROLS.ATTACK),
-            skill: keyboard.addKey(CONTROLS.SKILL),
+            dash: keyboard.addKey(CONTROLS.DASH),
+            weaponSkill: keyboard.addKey(CONTROLS.WEAPON_SKILL),
         };
     }
 
@@ -210,7 +212,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
      */
     update(_time: number, _delta: number): void {
         // 处理冲刺输入（冲刺优先级最高）
-        if (Phaser.Input.Keyboard.JustDown(this.keys.skill)) {
+        if (Phaser.Input.Keyboard.JustDown(this.keys.dash)) {
             this.handleDash();
         }
 
