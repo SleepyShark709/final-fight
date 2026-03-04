@@ -45,6 +45,11 @@ export abstract class WeaponBase {
         return this.stats.attackRange;
     }
 
+    /** 是否远程武器（远程武器不走近战碰撞检测） */
+    isRanged(): boolean {
+        return this.stats.type === 'ranged';
+    }
+
     /** 获取击退力度 */
     getKnockbackForce(): number {
         return this.stats.knockbackForce;
@@ -55,6 +60,11 @@ export abstract class WeaponBase {
         this.isAttacking = false;
         this.canDealDamage = false;
         this.hitEnemiesThisAttack.clear();
+    }
+
+    /** 每帧更新（子类按需重写） */
+    update(_time: number, _delta: number): void {
+        // no-op by default
     }
 
     /** 中断攻击（冲刺时调用） */

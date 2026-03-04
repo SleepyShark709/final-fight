@@ -22,6 +22,9 @@ export class BowWeapon extends WeaponBase {
     /** Auto-destroy timer for projectiles (ms) */
     private readonly PROJECTILE_LIFETIME = 3000;
 
+    /** 最大飞行距离（像素） */
+    private readonly MAX_FLIGHT_DISTANCE = 500;
+
     constructor(scene: Phaser.Scene, owner: Phaser.Physics.Arcade.Sprite) {
         super(scene, owner, WEAPON_TABLE.bow);
     }
@@ -158,7 +161,19 @@ export class BowWeapon extends WeaponBase {
         body.setVelocity(vx, vy);
         body.setAllowGravity(false);
 
+        // 记录出生点，用于计算飞行距离
+        proj.setData('spawnX', proj.x);
+        proj.setData('spawnY', proj.y);
+
         this.projectiles.push(proj);
+
+        // 碰到平台时销毁
+        const gameScene = this.scene as any;
+        if (gameScene.platforms) {
+            this.scene.physics.add.collider(proj, gameScene.platforms, () => {
+                this.destroyProjectile(proj);
+            });
+        }
 
         // Auto-destroy after lifetime
         this.scene.time.delayedCall(this.PROJECTILE_LIFETIME, () => {
@@ -192,8 +207,22 @@ export class BowWeapon extends WeaponBase {
 
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const proj = this.projectiles[i];
+            if (!proj.active) {
+                this.destroyProjectile(proj);
+                continue;
+            }
+
+            // 超出最大飞行距离时销毁
+            const spawnX = proj.getData('spawnX') as number;
+            const spawnY = proj.getData('spawnY') as number;
+            const dist = Phaser.Math.Distance.Between(spawnX, spawnY, proj.x, proj.y);
+            if (dist > this.MAX_FLIGHT_DISTANCE) {
+                this.destroyProjectile(proj);
+                continue;
+            }
+
+            // 超出镜头范围时销毁
             if (
-                !proj.active ||
                 proj.x < bounds.left ||
                 proj.x > bounds.right ||
                 proj.y < bounds.top ||

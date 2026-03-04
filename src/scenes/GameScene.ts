@@ -10,7 +10,6 @@ import {
     DEPTH,
     TILE_SIZE,
     ASSETS,
-    PLAYER_CONFIG,
     ENEMY_CONFIG,
 } from '../utils/Constants';
 import { Player } from '../entities/Player';
@@ -26,6 +25,7 @@ import { DecorationManager } from '../systems/DecorationManager';
 import { LEVEL_1_DECORATIONS } from '../config/LevelConfig';
 import { HitStop } from '../utils/HitStop';
 import { EffectsManager } from '../utils/EffectsManager';
+import { BowWeapon } from '../combat/weapons/BowWeapon';
 
 export class GameScene extends Phaser.Scene {
     // 玩家实例
@@ -100,6 +100,20 @@ export class GameScene extends Phaser.Scene {
         // 监听数值面板切换
         this.input.keyboard?.on('keydown-C', () => {
             this.statsPanel?.toggle();
+        });
+
+        // 调试：数字键切换武器（1=裂空剑, 2=雷霆拳, 3=追影弓）
+        this.input.keyboard?.on('keydown-ONE', () => {
+            this.player.equipWeapon('sword');
+            console.log('[Debug] 切换武器: 裂空剑');
+        });
+        this.input.keyboard?.on('keydown-TWO', () => {
+            this.player.equipWeapon('fists');
+            console.log('[Debug] 切换武器: 雷霆拳');
+        });
+        this.input.keyboard?.on('keydown-THREE', () => {
+            this.player.equipWeapon('bow');
+            console.log('[Debug] 切换武器: 追影弓');
         });
 
         // 创建玩家数值面板
@@ -363,6 +377,8 @@ export class GameScene extends Phaser.Scene {
         if (enemyEntity.isDead) return;
         if (!playerEntity.weapon.isAttacking) return;
         if (!playerEntity.weapon.canDealDamage) return;
+        // 远程武器不走近战碰撞，由 checkPlayerProjectileHits 处理
+        if (playerEntity.weapon.isRanged()) return;
 
         // 检查攻击方向是否正确
         const isAttackingTowardsEnemy =
@@ -569,6 +585,7 @@ export class GameScene extends Phaser.Scene {
 
         // 检查胜利条件
         if (this.player.x > 3000) {
+            this.scene.stop(SCENES.UI);
             this.scene.start(SCENES.WIN);
         }
 
@@ -582,6 +599,9 @@ export class GameScene extends Phaser.Scene {
 
         // 检测弓箭手投射物命中玩家
         this.checkProjectileHits();
+
+        // 检测玩家投射物命中敌人
+        this.checkPlayerProjectileHits();
 
         // 更新调试信息
         if (this.isDebugMode) {
@@ -617,7 +637,7 @@ export class GameScene extends Phaser.Scene {
      * 基于距离的攻击检测（使用 Constants 配置的范围）
      */
     private checkAttacksByDistance(): void {
-        const playerAttackRange = PLAYER_CONFIG.attackRange + 30; // 稍微扩大以补偿重叠检测误差
+        const playerAttackRange = this.player.weapon.getAttackRange() + 30; // 稍微扩大以补偿重叠检测误差
 
         this.enemies.getChildren().forEach((enemy) => {
             const enemyEntity = enemy as SkeletonEnemy;
@@ -631,7 +651,9 @@ export class GameScene extends Phaser.Scene {
             );
 
             // 玩家攻击敌人（多目标：每个敌人独立检测是否已被本次攻击命中）
+            // 远程武器不走近战距离检测，由 checkPlayerProjectileHits 处理
             if (
+                !this.player.weapon.isRanged() &&
                 this.player.weapon.isAttacking &&
                 this.player.weapon.canDealDamage &&
                 !this.player.weapon.hitEnemiesThisAttack.has(enemyEntity) &&
@@ -774,10 +796,66 @@ export class GameScene extends Phaser.Scene {
     }
 
     /**
+     * 检测玩家投射物命中敌人
+     */
+    private checkPlayerProjectileHits(): void {
+        // Check if player weapon is a BowWeapon with projectiles
+        const weapon = this.player.weapon;
+        if (!('projectiles' in weapon)) return;
+        const bowWeapon = weapon as BowWeapon;
+
+        for (const proj of [...bowWeapon.projectiles]) {
+            if (!proj.active) {
+                bowWeapon.destroyProjectile(proj);
+                continue;
+            }
+
+            this.enemies.getChildren().forEach((enemy) => {
+                const enemyEntity = enemy as SkeletonEnemy;
+                if (enemyEntity.isDead) return;
+
+                const dx = Math.abs(proj.x - enemyEntity.x);
+                const dy = Math.abs(proj.y - enemyEntity.y);
+                if (dx < 30 && dy < 35) {
+                    // Hit!
+                    const isCritical = Math.random() < this.player.criticalChance;
+                    const baseDamage = this.player.getCurrentDamage();
+                    const finalDamage = isCritical
+                        ? Math.round(baseDamage * this.player.criticalMultiplier)
+                        : baseDamage;
+
+                    CameraShake.shake(
+                        this.cameras.main,
+                        isCritical ? ShakeIntensity.HEAVY : ShakeIntensity.LIGHT,
+                    );
+                    DamageText.create(
+                        this,
+                        enemyEntity.x,
+                        enemyEntity.y - 30,
+                        finalDamage,
+                        isCritical ? DamageType.CRITICAL : DamageType.NORMAL,
+                    );
+                    EffectsManager.createHitParticles(this, enemyEntity.x, enemyEntity.y - 20, isCritical);
+                    if (isCritical) {
+                        EffectsManager.createCriticalFlash(this);
+                    }
+                    HitStop.freeze(this, isCritical ? 14 : 6);
+
+                    const knockbackDir = enemyEntity.x > this.player.x ? 1 : -1;
+                    enemyEntity.takeDamage(finalDamage, knockbackDir);
+                    this.player.registerHit();
+                    bowWeapon.destroyProjectile(proj);
+                }
+            });
+        }
+    }
+
+    /**
      * 处理玩家死亡
      */
     private handlePlayerDeath(): void {
         this.time.delayedCall(2000, () => {
+            this.scene.stop(SCENES.UI);
             this.scene.start(SCENES.GAME_OVER);
         });
     }

@@ -1,31 +1,45 @@
-import { app as e, BrowserWindow as i } from "electron";
-import t from "path";
-process.platform === "win32" && (e.commandLine.appendSwitch("disable-gpu-sandbox"), e.commandLine.appendSwitch("no-sandbox"));
-const a = process.env.VITE_DEV_SERVER_URL !== void 0;
-let n = null;
-function o() {
-  n = new i({
+import { app, BrowserWindow } from "electron";
+import path from "path";
+if (process.platform === "win32") {
+  app.commandLine.appendSwitch("disable-gpu-sandbox");
+  app.commandLine.appendSwitch("no-sandbox");
+}
+const isDev = process.env.VITE_DEV_SERVER_URL !== void 0;
+let mainWindow = null;
+function createWindow() {
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
-    useContentSize: !0,
+    useContentSize: true,
     webPreferences: {
-      nodeIntegration: !0,
-      contextIsolation: !1,
+      nodeIntegration: true,
+      contextIsolation: false,
       // For simple games, this is often easier. strictly, should be true with preload.
-      webSecurity: !1
+      webSecurity: false
       // Be careful with this in production apps, but fine for self-contained games
     },
-    autoHideMenuBar: !0
+    autoHideMenuBar: true
     // Hide menu bar on Windows/Linux
-  }), a ? n.loadURL(process.env.VITE_DEV_SERVER_URL) : n.loadFile(t.join(e.getAppPath(), "dist", "index.html")), n.on("closed", () => {
-    n = null;
+  });
+  if (isDev) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+  } else {
+    mainWindow.loadFile(path.join(app.getAppPath(), "dist", "index.html"));
+  }
+  mainWindow.on("closed", () => {
+    mainWindow = null;
   });
 }
-e.whenReady().then(() => {
-  o(), e.on("activate", () => {
-    i.getAllWindows().length === 0 && o();
+app.whenReady().then(() => {
+  createWindow();
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
   });
 });
-e.on("window-all-closed", () => {
-  process.platform !== "darwin" && e.quit();
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
 });

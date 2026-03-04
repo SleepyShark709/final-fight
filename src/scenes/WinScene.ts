@@ -33,7 +33,9 @@ export class WinScene extends Phaser.Scene {
             .setOrigin(0.5);
 
         this.input.keyboard?.on('keydown-R', () => {
+            this.scene.stop(SCENES.UI);
             this.scene.start(SCENES.GAME);
+            this.scene.start(SCENES.UI);
         });
     }
 }

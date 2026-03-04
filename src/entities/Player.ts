@@ -11,7 +11,6 @@ import {
 import { GameScene } from '../scenes/GameScene';
 import { WeaponBase } from '../combat/WeaponBase';
 import { WeaponFactory } from '../combat/WeaponFactory';
-import { SwordWeapon } from '../combat/weapons/SwordWeapon';
 
 // 玩家状态枚举
 export enum PlayerState {
@@ -110,7 +109,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         (this.body as Phaser.Physics.Arcade.Body).pushable = false;
 
         // 初始化武器（默认：裂空剑）
-        this.weapon = new SwordWeapon(scene, this);
+        this.weapon = WeaponFactory.create('sword', scene, this);
 
         // 初始化输入
         this.setupInput(scene);
@@ -206,6 +205,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
      * 每帧更新
      */
     update(_time: number, _delta: number): void {
+        // 每帧更新武器（如 BowWeapon 的投射物清理）
+        this.weapon.update(_time, _delta);
+
         // 处理冲刺输入（冲刺优先级最高）
         if (Phaser.Input.Keyboard.JustDown(this.keys.dash)) {
             this.handleDash();
@@ -306,6 +308,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
      */
     private handleWeaponSkill(): void {
         if (Phaser.Input.Keyboard.JustDown(this.keys.weaponSkill)) {
+            if (!this.weapon.isSkillReady()) return;
             this.weapon.skill();
             this.currentState = PlayerState.ATTACK;
         }

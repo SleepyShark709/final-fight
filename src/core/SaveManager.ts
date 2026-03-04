@@ -74,22 +74,29 @@ export class SaveManager {
         }
     }
 
-    static getData(): SaveData {
+    private static ensureLoaded(): void {
         if (!this.data) this.load();
+    }
+
+    static getData(): SaveData {
+        this.ensureLoaded();
         return this.data;
     }
 
     static addShards(amount: number): void {
+        this.ensureLoaded();
         this.data.memoryShards += amount;
         this.save();
     }
 
     static addGold(amount: number): void {
+        this.ensureLoaded();
         this.data.gold += amount;
         this.save();
     }
 
     static spendShards(amount: number): boolean {
+        this.ensureLoaded();
         if (this.data.memoryShards < amount) return false;
         this.data.memoryShards -= amount;
         this.save();
@@ -97,6 +104,7 @@ export class SaveManager {
     }
 
     static spendGold(amount: number): boolean {
+        this.ensureLoaded();
         if (this.data.gold < amount) return false;
         this.data.gold -= amount;
         this.save();
@@ -104,28 +112,33 @@ export class SaveManager {
     }
 
     static getUpgradeLevel(upgradeId: string): number {
+        this.ensureLoaded();
         return this.data.upgrades[upgradeId] || 0;
     }
 
     static setUpgradeLevel(upgradeId: string, level: number): void {
+        this.ensureLoaded();
         this.data.upgrades[upgradeId] = level;
         this.save();
     }
 
     static isWeaponUnlocked(weaponId: string): boolean {
+        this.ensureLoaded();
         return this.data.unlockedWeapons.includes(weaponId);
     }
 
     static unlockWeapon(weaponId: string): void {
+        this.ensureLoaded();
         if (!this.data.unlockedWeapons.includes(weaponId)) {
             this.data.unlockedWeapons.push(weaponId);
             this.save();
         }
     }
 
-    static recordRun(kills: number, roomsCleared: number, shardsEarned: number): void {
+    static recordRun(kills: number, roomsCleared: number, shardsEarned: number, survived: boolean = false): void {
+        this.ensureLoaded();
         this.data.totalRuns++;
-        this.data.totalDeaths++;
+        if (!survived) this.data.totalDeaths++;
         this.data.totalKills += kills;
         this.data.memoryShards += shardsEarned;
         if (roomsCleared > this.data.bestRoom) {
@@ -135,6 +148,7 @@ export class SaveManager {
     }
 
     static recordBossDefeat(bossId: string): void {
+        this.ensureLoaded();
         if (!this.data.bossesDefeated.includes(bossId)) {
             this.data.bossesDefeated.push(bossId);
             this.save();
