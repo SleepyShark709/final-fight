@@ -8,9 +8,13 @@ import {
     CONTROLS,
     // DEPTH, // Unused
 } from '../utils/Constants';
-import { GameScene } from '../scenes/GameScene';
 import { WeaponBase } from '../combat/WeaponBase';
 import { WeaponFactory } from '../combat/WeaponFactory';
+
+/** 场景需要提供 playerEnemyCollider 以支持冲刺穿越 */
+interface SceneWithCollider extends Phaser.Scene {
+    playerEnemyCollider?: Phaser.Physics.Arcade.Collider;
+}
 
 // 玩家状态枚举
 export enum PlayerState {
@@ -76,7 +80,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     private debugGraphics?: Phaser.GameObjects.Graphics;
     private debugText?: Phaser.GameObjects.Text;
 
-    constructor(scene: GameScene, x: number, y: number) {
+    constructor(scene: Phaser.Scene, x: number, y: number) {
         super(scene, x, y, 'player-idle-0');
 
         // 初始化属性
@@ -562,9 +566,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         }
 
         // 禁用与敌人的碰撞（穿越敌人）
-        const gameScene = this.scene as GameScene;
-        if (gameScene.playerEnemyCollider) {
-            gameScene.playerEnemyCollider.active = false;
+        const sceneWithCollider = this.scene as SceneWithCollider;
+        if (sceneWithCollider.playerEnemyCollider) {
+            sceneWithCollider.playerEnemyCollider.active = false;
         }
 
         // 设置冲刺速度
@@ -582,8 +586,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             this.setAlpha(1.0);
 
             // 恢复与敌人的碰撞
-            if (gameScene.playerEnemyCollider) {
-                gameScene.playerEnemyCollider.active = true;
+            if (sceneWithCollider.playerEnemyCollider) {
+                sceneWithCollider.playerEnemyCollider.active = true;
             }
 
             console.log('[Dash] 冲刺结束');

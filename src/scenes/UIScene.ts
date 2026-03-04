@@ -37,7 +37,7 @@ export class UIScene extends Phaser.Scene {
         super({ key: SCENES.UI });
     }
 
-    create(): void {
+    create(data?: { parentScene?: string }): void {
         // 创建血条
         this.healthBar = new HealthBar(this, 20, 20, 200, 20);
 
@@ -51,25 +51,24 @@ export class UIScene extends Phaser.Scene {
         // 创建连击计数器
         this.createComboCounter();
 
-        // 监听游戏场景的玩家创建事件
-        const gameScene = this.scene.get(SCENES.GAME) as any;
+        // 获取父场景（支持 GameScene 和 RunScene）
+        const parentSceneKey = data?.parentScene || SCENES.GAME;
+        const gameScene = this.scene.get(parentSceneKey) as any;
 
-        // 先尝试直接获取player（如果GameScene已经创建了player）
-        if (gameScene.player) {
+        // 先尝试直接获取player
+        if (gameScene?.player) {
             this.player = gameScene.player;
-            // 初始化血条显示
             this.healthBar.update(this.player.health, this.player.maxHealth);
         }
 
         // 也监听事件（以防顺序问题）
-        gameScene.events.on('player-created', (player: Player) => {
+        gameScene?.events.on('player-created', (player: Player) => {
             this.player = player;
-            // 初始化血条显示
             this.healthBar.update(this.player.health, this.player.maxHealth);
         });
 
         // 监听连击事件
-        gameScene.events.on('combo-count-changed', (count: number) => {
+        gameScene?.events.on('combo-count-changed', (count: number) => {
             this.showCombo(count);
         });
 

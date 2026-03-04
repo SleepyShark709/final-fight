@@ -8,6 +8,7 @@ import { MenuScene } from '../scenes/MenuScene';
 import { GameScene } from '../scenes/GameScene';
 import { UIScene } from '../scenes/UIScene';
 
+import { RunScene } from '../scenes/RunScene';
 import { GameOverScene } from '../scenes/GameOverScene';
 import { WinScene } from '../scenes/WinScene';
 
@@ -48,7 +49,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     },
 
     // 游戏场景列表
-    scene: [BootScene, MenuScene, GameScene, UIScene, GameOverScene, WinScene],
+    scene: [BootScene, MenuScene, GameScene, RunScene, UIScene, GameOverScene, WinScene],
 
     // 输入设置
     input: {
