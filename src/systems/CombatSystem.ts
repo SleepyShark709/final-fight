@@ -35,7 +35,7 @@ export class CombatSystem {
      * 处理玩家攻击敌人
      */
     public playerAttackEnemy(player: Player, enemy: Enemy): void {
-        if (!player.isAttacking || enemy.isDead) return;
+        if (!player.weapon.isAttacking || enemy.isDead) return;
 
         const distance = Phaser.Math.Distance.Between(
             player.x,

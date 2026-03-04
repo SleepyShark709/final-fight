@@ -109,7 +109,7 @@ export class PlayerStatsPanel {
             ``,
             `🛡 无敌: ${this.player.isInvincible ? '是' : '否'}`,
             ``,
-            `⚡ 正在攻击: ${this.player.isAttacking ? '是' : '否'}`,
+            `⚡ 正在攻击: ${this.player.weapon.isAttacking ? '是' : '否'}`,
             ``,
             `━━━━━━━━━━━━━━━━━━`,
             ``,

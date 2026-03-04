@@ -361,8 +361,8 @@ export class GameScene extends Phaser.Scene {
         const enemyEntity = enemy as SkeletonEnemy;
 
         if (enemyEntity.isDead) return;
-        if (!playerEntity.isAttacking) return;
-        if (!playerEntity.canDealDamage) return;
+        if (!playerEntity.weapon.isAttacking) return;
+        if (!playerEntity.weapon.canDealDamage) return;
 
         // 检查攻击方向是否正确
         const isAttackingTowardsEnemy =
@@ -372,7 +372,7 @@ export class GameScene extends Phaser.Scene {
         if (!isAttackingTowardsEnemy) return;
 
         // 防止对同一敌人重复命中（允许命中多个不同敌人）
-        if (playerEntity.hitEnemiesThisAttack.has(enemyEntity)) {
+        if (playerEntity.weapon.hitEnemiesThisAttack.has(enemyEntity)) {
             return;
         }
 
@@ -419,7 +419,7 @@ export class GameScene extends Phaser.Scene {
 
         const knockbackDir = enemyEntity.x > playerEntity.x ? 1 : -1;
         enemyEntity.takeDamage(finalDamage, knockbackDir);
-        playerEntity.hitEnemiesThisAttack.add(enemyEntity);
+        playerEntity.weapon.hitEnemiesThisAttack.add(enemyEntity);
         playerEntity.registerHit();
     };
 
@@ -632,9 +632,9 @@ export class GameScene extends Phaser.Scene {
 
             // 玩家攻击敌人（多目标：每个敌人独立检测是否已被本次攻击命中）
             if (
-                this.player.isAttacking &&
-                this.player.canDealDamage &&
-                !this.player.hitEnemiesThisAttack.has(enemyEntity) &&
+                this.player.weapon.isAttacking &&
+                this.player.weapon.canDealDamage &&
+                !this.player.weapon.hitEnemiesThisAttack.has(enemyEntity) &&
                 distance < playerAttackRange
             ) {
                 const isAttackingTowardsEnemy =
@@ -684,7 +684,7 @@ export class GameScene extends Phaser.Scene {
 
                     const knockbackDir = enemyEntity.x > this.player.x ? 1 : -1;
                     enemyEntity.takeDamage(finalDamage, knockbackDir);
-                    this.player.hitEnemiesThisAttack.add(enemyEntity);
+                    this.player.weapon.hitEnemiesThisAttack.add(enemyEntity);
                     this.player.registerHit(); // 仅在实际命中时计入连击
                 }
             }

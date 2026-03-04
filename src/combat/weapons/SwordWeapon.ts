@@ -4,10 +4,16 @@
  * Extracts and encapsulates the combo-attack logic that was previously
  * inlined in Player.handleAttack().
  */
+import Phaser from 'phaser';
 import { WeaponBase } from '../WeaponBase';
+import { WEAPON_TABLE } from '../../config/WeaponConfig';
 import { PLAYER_ATTACK_TYPES } from '../../utils/Constants';
 
 export class SwordWeapon extends WeaponBase {
+    constructor(scene: Phaser.Scene, owner: Phaser.Physics.Arcade.Sprite) {
+        super(scene, owner, WEAPON_TABLE.sword);
+    }
+
     // ----------------------------------------------------------------
     // Normal attack (J key) -- 3-step combo
     // ----------------------------------------------------------------
