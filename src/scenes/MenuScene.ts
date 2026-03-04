@@ -169,9 +169,8 @@ export class MenuScene extends Phaser.Scene {
         this.cameras.main.fadeOut(500, 0, 0, 0);
 
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            // 同时启动游戏场景和 UI 场景
-            this.scene.start(SCENES.GAME);
-            this.scene.start(SCENES.UI);
+            // 进入据点（Hub）
+            this.scene.start(SCENES.HUB);
         });
     }
 }
