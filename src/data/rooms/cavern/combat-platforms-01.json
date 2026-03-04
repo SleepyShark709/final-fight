@@ -1,0 +1,23 @@
+{
+    "id": "cavern-combat-platforms-01",
+    "biome": "cavern",
+    "type": "combat",
+    "size": { "width": 1200, "height": 540 },
+    "playerSpawn": { "x": 100, "y": 380 },
+    "groundY": 508,
+    "platforms": [
+        { "x": 300, "y": 380, "tileCount": 6 },
+        { "x": 700, "y": 320, "tileCount": 5 },
+        { "x": 450, "y": 260, "tileCount": 4 }
+    ],
+    "spawns": [
+        { "type": "skeleton", "x": 350, "y": 250 },
+        { "type": "archer", "x": 750, "y": 190 },
+        { "type": "skeleton", "x": 600, "y": 380 },
+        { "type": "flying", "x": 900, "y": 250 }
+    ],
+    "hazards": [],
+    "exits": [
+        { "position": "right", "x": 1170, "y": 440 }
+    ]
+}
