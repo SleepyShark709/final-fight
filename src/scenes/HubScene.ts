@@ -99,6 +99,7 @@ export class HubScene extends Phaser.Scene {
     private dialogLines: string[] = [];
     private dialogLineIndex: number = 0;
     private isTransitioning: boolean = false; // 正在切场景
+    private enterKey!: Phaser.Input.Keyboard.Key; // Enter 键用于推进对话
 
     constructor() {
         super({ key: SCENES.HUB });
@@ -139,6 +140,11 @@ export class HubScene extends Phaser.Scene {
         // 初始化输入控制器
         this.inputController = new InputController(this);
 
+        // Enter 键用于推进 / 关闭对话
+        this.enterKey = this.input.keyboard!.addKey(
+            Phaser.Input.Keyboard.KeyCodes.ENTER,
+        );
+
         // 入场淡入
         this.cameras.main.fadeIn(500, 26, 16, 37);
     }
@@ -161,6 +167,14 @@ export class HubScene extends Phaser.Scene {
         // 处理交互输入（W 键）
         if (Phaser.Input.Keyboard.JustDown(this.inputController.keys.interact)) {
             this.handleInteract();
+        }
+
+        // Enter 键推进 / 关闭对话
+        if (
+            this.isShowingDialog &&
+            Phaser.Input.Keyboard.JustDown(this.enterKey)
+        ) {
+            this.advanceDialog();
         }
     }
 
@@ -555,6 +569,12 @@ export class HubScene extends Phaser.Scene {
         }
     }
 
+    /** 拼接对话文本和底部提示 */
+    private formatDialogText(line: string, isLast: boolean): string {
+        const hint = isLast ? '\n[ Enter 关闭 ]' : '\n[ Enter 继续 ▶ ]';
+        return line + hint;
+    }
+
     /** 开始一段对话 */
     private startDialog(lines: string[]): void {
         this.isShowingDialog = true;
@@ -562,7 +582,8 @@ export class HubScene extends Phaser.Scene {
         this.dialogLineIndex = 0;
         this.promptText.setVisible(false);
 
-        this.dialogText.setText(this.dialogLines[0]);
+        const isLast = lines.length <= 1;
+        this.dialogText.setText(this.formatDialogText(lines[0], isLast));
         this.dialogText.setVisible(true);
     }
 
@@ -576,7 +597,14 @@ export class HubScene extends Phaser.Scene {
             this.dialogLines = [];
             this.dialogLineIndex = 0;
         } else {
-            this.dialogText.setText(this.dialogLines[this.dialogLineIndex]);
+            const isLast =
+                this.dialogLineIndex >= this.dialogLines.length - 1;
+            this.dialogText.setText(
+                this.formatDialogText(
+                    this.dialogLines[this.dialogLineIndex],
+                    isLast,
+                ),
+            );
         }
     }
 

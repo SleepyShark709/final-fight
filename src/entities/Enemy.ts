@@ -497,6 +497,14 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
         // 禁用物理
         (this.body as Phaser.Physics.Arcade.Body).enable = false;
 
+        // 立即销毁血条
+        if (this.healthBarBg) {
+            this.healthBarBg.destroy();
+        }
+        if (this.healthBarFill) {
+            this.healthBarFill.destroy();
+        }
+
         // 清理调试图形和文本
         if (this.debugGraphics) {
             this.debugGraphics.destroy();

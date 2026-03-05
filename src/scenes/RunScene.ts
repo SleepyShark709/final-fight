@@ -191,6 +191,9 @@ export class RunScene extends Phaser.Scene {
      * 房间清理完毕，触发祝福选择
      */
     private onRoomCleared(): void {
+        // Boss 房间由 handleBossDefeated 处理过渡，这里跳过
+        if (this.currentRoomConfig.type === 'boss') return;
+
         this.roomPhase = RoomPhase.CLEARED;
         console.log('[RunScene] 房间已清理！');
 
@@ -876,6 +879,19 @@ export class RunScene extends Phaser.Scene {
             });
             console.log('[RunScene] 死亡抗拒触发！剩余:', this.runManager.getState().deathDefiances);
             return;
+        }
+
+        // 防止玩家死亡后仍触发房间清理 → 祝福选择的竞态条件
+        this.roomPhase = RoomPhase.TRANSITION;
+
+        // 如果祝福选择场景已经在运行，直接关闭它
+        if (this.scene.isActive(SCENES.BLESSING)) {
+            this.scene.stop(SCENES.BLESSING);
+            // 恢复被 showBlessingSelect 暂停的状态
+            this.physics.resume();
+            if (this.input.keyboard) {
+                this.input.keyboard.enabled = true;
+            }
         }
 
         const finalState = this.runManager.endRun();
