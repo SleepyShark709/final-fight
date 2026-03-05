@@ -6,11 +6,8 @@
 import Phaser from 'phaser';
 import { RoomConfig, HazardData } from '@/config/RoomConfig';
 import { TILE_SIZE, ASSETS, DEPTH } from '@/utils/Constants';
-import { SkeletonEnemy } from '@/entities/SkeletonEnemy';
-import { ArcherEnemy } from '@/entities/ArcherEnemy';
-import { ShieldEnemy } from '@/entities/ShieldEnemy';
-import { FlyingEnemy } from '@/entities/FlyingEnemy';
 import { Enemy } from '@/entities/Enemy';
+import { EnemyFactory } from '@/entities/EnemyFactory';
 
 export interface RoomObjects {
     platforms: Phaser.Physics.Arcade.StaticGroup;
@@ -93,31 +90,12 @@ export class RoomGenerator {
     }
 
     /**
-     * 根据类型字符串生成敌人
+     * 根据类型字符串生成敌人（委托 EnemyFactory）
      */
     private spawnEnemy(type: string, x: number, y: number): void {
         if (!this.enemies) return;
 
-        let enemy: Enemy;
-        switch (type) {
-            case 'skeleton':
-                enemy = new SkeletonEnemy(this.scene, x, y);
-                break;
-            case 'archer':
-                enemy = new ArcherEnemy(this.scene, x, y);
-                break;
-            case 'shield':
-                enemy = new ShieldEnemy(this.scene, x, y);
-                break;
-            case 'flying':
-                enemy = new FlyingEnemy(this.scene, x, y);
-                break;
-            default:
-                console.warn(`[RoomGenerator] 未知敌人类型: ${type}, 使用骷髅兵替代`);
-                enemy = new SkeletonEnemy(this.scene, x, y);
-                break;
-        }
-
+        const enemy = EnemyFactory.create(type, this.scene, x, y);
         enemy.setDepth(DEPTH.ENEMIES);
         this.enemies.add(enemy);
     }

@@ -173,6 +173,8 @@ export const SCENES = {
     RUN: 'RunScene',
     HUB: 'HubScene',
     DEATH: 'DeathScene',
+    BLESSING: 'BlessingScene',
+    UPGRADE: 'UpgradeScene',
     UI: 'UIScene',
     GAME_OVER: 'GameOverScene',
     WIN: 'WinScene',
@@ -210,4 +212,40 @@ export const DEPTH = {
     PLAYER: 30,
     EFFECTS: 40,
     UI: 100,
+    BLESSING_OVERLAY: 150,
+};
+
+// ===== 祝福系统常量 =====
+export const BLESSING = {
+    /** 每次通关房间后提供的选择数量 */
+    CHOICES_PER_ROOM: 3,
+    /** 触发祝福选择的房间间隔 (每N个房间触发一次) */
+    ROOM_INTERVAL: 1,
+    /** 稀有度权重: [普通, 稀有, 史诗] */
+    RARITY_WEIGHTS: [60, 30, 10] as readonly number[],
+    /** 稀有度颜色 */
+    RARITY_COLORS: {
+        common: 0xaaaaaa,
+        rare: 0x4488ff,
+        epic: 0xaa44ff,
+    },
+    /** 神明颜色 */
+    GOD_COLORS: {
+        fire: 0xff6633,
+        thunder: 0xffdd33,
+        ice: 0x33ccff,
+    },
+};
+
+// ===== 永久升级系统常量 =====
+export const UPGRADE = {
+    /** 卡片尺寸 */
+    CARD_WIDTH: 180,
+    CARD_HEIGHT: 200,
+    /** 网格布局 */
+    COLS: 4,
+    ROWS: 2,
+    /** 卡片间距 */
+    GAP_X: 20,
+    GAP_Y: 20,
 };

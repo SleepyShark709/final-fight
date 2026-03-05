@@ -1,7 +1,7 @@
 # Final Fight V2 — 开发上下文
 
 > 本文件供 Agent 快速理解项目当前状态，避免重复探索。
-> 最后更新: 2026-03-04
+> 最后更新: 2026-03-05 (Phase 6 完成)
 
 ## 项目目标
 
@@ -50,22 +50,110 @@
 | 1.5 BowWeapon | `5a2fe43` | 追影弓: 远程投射物, 箭雨技能(5箭扇形) |
 | 1.6 WeaponFactory | `69143d5` | 工厂模式创建武器 + equipWeapon 切换 |
 
-### Bug 修复 (未提交, 在工作区)
+### Phase 2: 房间系统 ✅
 
-以下修复已应用到代码但尚未 commit:
+| 任务 | Commit | 说明 |
+|------|--------|------|
+| 2.1 RoomConfig | `1de7ce2` | RoomConfig 接口 + 3个石窟房间模板 |
+| 2.2 RoomGenerator | `71ce17e` | 动态创建 Phaser 物理对象 |
+| 2.3 RunScene | `25d6841` | 替代 GameScene, 基于房间的游戏循环 |
 
-| ID | 严重度 | 修复内容 | 文件 |
-|----|--------|----------|------|
-| C1-A | Critical | WeaponBase 添加 `update()` 空方法 | `WeaponBase.ts:61` |
-| C1-B | Critical | Player.update() 调用 `weapon.update()` | `Player.ts:209` |
-| C1-C | Critical | GameScene 添加 `checkPlayerProjectileHits()` | `GameScene.ts:782-832` |
-| C2 | Critical | 攻击距离使用 `weapon.getAttackRange()` 替代硬编码 | `GameScene.ts:623` |
-| I1 | Important | 武器技能添加 `isSkillReady()` 前置检查 | `Player.ts:311` |
-| I2 | Important | Player 使用 `WeaponFactory.create()` 替代直接实例化 | `Player.ts:112` |
-| I4 | Important | SaveManager 所有公共方法添加 `ensureLoaded()` | `SaveManager.ts:77-83` |
-| I5 | Important | `recordRun()` 添加 `survived` 参数，条件递增 deaths | `SaveManager.ts:138-141` |
+### Phase 3: 据点世界 ✅
 
-**待办: 需要 commit 这些修复并验证 TypeScript 编译通过。**
+| 任务 | Commit | 说明 |
+|------|--------|------|
+| 3.1 HubScene + DeathScene | `13a3f6d` | NPC 交互区 + 走廊门入口 + 运行结算 |
+
+### Phase 4: 祝福系统 ✅ (未提交, 在工作区)
+
+| 任务 | 说明 |
+|------|------|
+| 4.3 StatusEffects | tick-based 状态效果系统: 灼烧/减速/连锁闪电, 集成到Enemy基类 |
+| 4.1 BlessingConfig + BlessingManager | 12个祝福数据表(火/雷/冰各4), 装饰器模式包装伤害计算 |
+| 4.2 BlessingSelectScene + BlessingCard | 3选1卡牌UI, 房间通关后触发, 支持鼠标和键盘1/2/3选择 |
+
+**已通过 TypeScript 编译检查 (`npx tsc --noEmit` 零错误) 和代码审查（4个问题已修复）。**
+
+#### Phase 4 技术细节
+
+**新增文件:**
+- `src/combat/StatusEffects.ts` — `StatusEffectProcessor` 静态类: `process()` 每帧处理, `create()` 工厂方法, `addEffect()` 同源同类型刷新而非叠加
+- `src/config/BlessingConfig.ts` — 类型定义 (`GodType`, `BlessingRarity`, `BlessingSlot`, `BlessingEffectType`, `BlessingEffect`, `BlessingData`) + `BLESSING_TABLE` 数据
+- `src/combat/BlessingManager.ts` — 核心管理器: `applyAttackModifiers()` 返回修饰后伤害+状态效果, `rollBlessings()` 按稀有度权重随机抽取, `getCritBonus()`/`getDamageReduction()`/`getLifestealPercent()`/`getDashDamage()`/`getSpeedBonus()` 查询方法
+- `src/ui/BlessingCard.ts` — 220×300 卡牌容器: 神明图标(彩色圆)+名称+稀有度+槽位+描述+键位提示, `setSelected()` 高亮动画
+- `src/scenes/BlessingSelectScene.ts` — overlay 场景: 半透明遮罩 + 3张卡牌水平排列 + Back.easeOut 入场动画 + 选中放大/未选淡出动画
+
+**修改文件:**
+- `Enemy.ts` — 新增 `statusEffects: StatusEffect[]`, `originalSpeed`, `isSlowed`; 新增 `processStatusEffects()` (在update末尾调用) 和 `addStatusEffect()`; burn/chain回调有isDead守卫
+- `Player.ts` — 新增 `heal(amount)` 方法 (clamp到maxHealth, 发送player-health-changed事件)
+- `RunScene.ts` — 新增 `blessingManager` 属性; `onRoomCleared()` 改为先 `showBlessingSelect()` 再 `createExit()`; 祝福选择时禁用RunScene键盘防止与武器切换冲突; 所有3条伤害路径 (overlap/距离检测/投射物) 均注入祝福修饰链 (暴击加成→伤害修饰→状态效果→生命偷取); 敌人攻击玩家的3条路径均注入减伤
+- `Constants.ts` — 新增 `SCENES.BLESSING`, `DEPTH.BLESSING_OVERLAY: 150`, `BLESSING` 常量对象 (CHOICES_PER_ROOM/ROOM_INTERVAL/RARITY_WEIGHTS/RARITY_COLORS/GOD_COLORS)
+- `gameConfig.ts` — 注册 BlessingSelectScene
+
+**祝福伤害集成流程:**
+```
+玩家攻击命中 → getCurrentDamage() → blessingManager.applyAttackModifiers(damage, time)
+  → 返回 { damage: 修饰后伤害, effects: StatusEffect[] }
+  → getCritBonus() 叠加暴击率/倍率
+  → 对敌人 takeDamage + addStatusEffect
+  → getLifestealPercent() → player.heal()
+敌人攻击玩家 → getDamageReduction() → 减伤后 takeDamage
+```
+
+**代码审查修复的4个问题:**
+1. BlessingSelectScene键盘1/2/3与RunScene武器切换冲突 → 祝福选择时禁用RunScene键盘输入
+2. Enemy.processStatusEffects burn/chain回调缺少isDead守卫 → 已添加
+3. checkProjectileHits 敌人弓箭投射物未应用祝福减伤 → 已注入getDamageReduction
+4. checkPlayerProjectileHits 玩家弓箭投射物未应用祝福修饰 → 已注入完整祝福链
+
+**已知设计取舍 (非bug):**
+- `getCritBonus()` 中暴击率vs暴击倍率按 `blessing.id` 硬编码分发 (`thunder_skill`=暴击率, `thunder_passive`=暴击倍率)。若未来新增更多crit_bonus祝福需拆分BlessingEffectType
+- 连锁闪电(chain)目前仅对自身造成伤害，未实现向周围敌人扩散。可在后续Phase中扩展
+
+### Phase 5: 敌人 & Boss ✅ (未提交, 在工作区)
+
+| 任务 | 说明 |
+|------|------|
+| 5.1 EnemyTable + EnemyFactory | 敌人数值配置表(8种) + 工厂模式创建敌人 |
+| 5.2 BombBugEnemy + EliteSkeletonEnemy | 爆炸虫(自爆AoE) + 精英骷髅(3连击+闪避) |
+| 5.3 StoneGolemBoss | 3阶段Boss: 近战/地震/投石/冲锋, 500HP |
+
+### Phase 6: 永久升级 ✅ (未提交, 在工作区)
+
+| 任务 | 说明 |
+|------|------|
+| 6.1 UpgradeTable + MetaProgress | 8种升级数据配置 + 购买/重置/查询逻辑层 |
+| 6.2 UpgradeScene | 全屏覆盖层UI, 4×2卡片网格, WASD/J/R/ESC操作 |
+
+**已通过 TypeScript 编译检查 (`npx tsc --noEmit` 零错误) 和代码审查（2个问题已修复）。**
+
+#### Phase 6 技术细节
+
+**新增文件:**
+- `src/config/UpgradeTable.ts` — 8种升级数据表: UpgradeData接口 + UPGRADE_TABLE + linearCosts费用生成
+- `src/core/MetaProgress.ts` — 静态类: purchaseUpgrade()/resetUpgrade()/getStatBonuses()/getAllUpgrades()
+- `src/scenes/UpgradeScene.ts` — 覆盖层: 半透明遮罩 + 4×2卡片网格 + 进度条 + 键盘导航
+
+**修改文件:**
+- `Constants.ts` — 新增 `SCENES.UPGRADE`, `UPGRADE` 常量(卡片尺寸/网格布局)
+- `gameConfig.ts` — 注册 UpgradeScene
+- `HubScene.ts` — 记忆之镜交互改为 `openUpgradePanel()` 启动覆盖层, 键盘禁用/恢复
+- `RunScene.ts` — create()中调用 `MetaProgress.getStatBonuses()` 应用加成到Player; 死亡抗拒(复活)消耗逻辑; goldMultiplier/blessingLuckBonus 存储
+- `Player.ts` — 新增 `moveSpeed`/`dashCooldownTime` 实例属性; `applyUpgradeBonuses()` 方法; handleMovement/handleDash 使用实例属性
+- `BlessingManager.ts` — `rollBlessings()` 新增 `luckBonus` 参数, 调整稀有度权重
+- `BlessingSelectScene.ts` — 接收并传递 `luckBonus` 到 rollBlessings
+
+**升级系统数据流:**
+```
+据点记忆之镜 → W交互 → UpgradeScene(overlay)
+  → WASD选择 + J购买 → MetaProgress.purchaseUpgrade()
+  → SaveManager.spendShards() + setUpgradeLevel()
+  → ESC关闭 → HubScene
+
+运行开始 → RunScene.create()
+  → MetaProgress.getStatBonuses() → Player.applyUpgradeBonuses()
+  → RunManager.startRun(revives) / blessingLuckBonus / goldMultiplier
+```
 
 ## 新增文件结构
 
@@ -74,22 +162,41 @@ src/
 ├── combat/
 │   ├── WeaponBase.ts          # 武器抽象基类（策略模式）
 │   ├── WeaponFactory.ts       # 武器工厂
+│   ├── BlessingManager.ts     # 祝福管理器（装饰器模式）
+│   ├── StatusEffects.ts       # 状态效果系统 (burn/slow/chain)
 │   └── weapons/
 │       ├── SwordWeapon.ts     # 裂空剑 (默认)
 │       ├── FistsWeapon.ts     # 雷霆拳
 │       └── BowWeapon.ts       # 追影弓
 ├── config/
-│   └── WeaponConfig.ts        # 武器数值配置表 (WEAPON_TABLE)
+│   ├── WeaponConfig.ts        # 武器数值配置表 (WEAPON_TABLE)
+│   ├── BlessingConfig.ts      # 祝福数据表 (12个祝福, 3神明)
+│   ├── EnemyTable.ts          # 敌人数值配置表
+│   └── UpgradeTable.ts        # 永久升级配置表 (8种升级)
 ├── core/
 │   ├── SaveManager.ts         # 永久存档 (localStorage)
-│   └── RunManager.ts          # 单次运行状态
+│   ├── RunManager.ts          # 单次运行状态
+│   ├── RoomGenerator.ts       # 房间模板加载/实例化
+│   └── MetaProgress.ts        # 永久进度管理器
+├── entities/
+│   ├── EnemyFactory.ts        # 敌人工厂
+│   ├── enemies/
+│   │   ├── BombBugEnemy.ts    # 爆炸虫
+│   │   └── EliteSkeletonEnemy.ts # 精英骷髅
+│   └── bosses/
+│       └── StoneGolemBoss.ts  # 岩石巨像Boss
+├── scenes/
+│   ├── BlessingSelectScene.ts # 祝福选择覆盖层场景
+│   └── UpgradeScene.ts        # 升级UI覆盖层场景
+├── ui/
+│   └── BlessingCard.ts        # 祝福卡牌UI组件
 ```
 
 ## 关键设计模式
 
 1. **策略模式 (WeaponBase)**: Player 持有 `weapon: WeaponBase`, 攻击/技能委托给具体武器实现
 2. **工厂模式 (WeaponFactory)**: `WeaponFactory.create('sword', scene, owner)` 按 ID 创建武器
-3. **装饰器模式 (计划中)**: BlessingManager 包装伤害计算函数，添加状态效果
+3. **装饰器模式 (BlessingManager)**: 包装伤害计算函数，注入暴击加成/伤害修饰/状态效果/生命偷取/减伤
 4. **状态机**: Player/Enemy 使用 enum-based 状态机管理行为
 
 ## 键位布局
@@ -108,43 +215,33 @@ src/
 | 雷霆拳 fists | 近战 | 8 | 5段 | 200ms | 35px | 闪电连击 (3连) |
 | 追影弓 bow | 远程 | 30 | 1段 | 800ms | 280px | 箭雨 (5箭) |
 
+## 祝福数据概览
+
+| 神明 | 槽位 | ID | 名称 | 稀有度 | 效果 |
+|------|------|----|------|--------|------|
+| 火 | 攻击 | fire_attack | 烈焰之击 | 普通 | 灼烧 5dps/3s |
+| 火 | 技能 | fire_skill | 焚天怒焰 | 稀有 | 技能伤害+40% |
+| 火 | 冲刺 | fire_dash | 炎爆冲刺 | 稀有 | 冲刺路径15点火伤 |
+| 火 | 被动 | fire_passive | 灼热之躯 | 史诗 | 攻击力+15% |
+| 雷 | 攻击 | thunder_attack | 雷霆一击 | 普通 | 连锁闪电8伤害 |
+| 雷 | 技能 | thunder_skill | 闪电风暴 | 稀有 | 暴击率+15% |
+| 雷 | 冲刺 | thunder_dash | 雷光疾步 | 普通 | 速度+30% |
+| 雷 | 被动 | thunder_passive | 感电体质 | 史诗 | 暴击倍率+0.5x |
+| 冰 | 攻击 | ice_attack | 霜冻之触 | 普通 | 减速40%/2s |
+| 冰 | 技能 | ice_skill | 冰晶护盾 | 稀有 | 减伤20% |
+| 冰 | 冲刺 | ice_dash | 寒冰之路 | 稀有 | 减速50%/3s |
+| 冰 | 被动 | ice_passive | 生命汲取 | 史诗 | 吸血10% |
+
+稀有度权重: 普通60% / 稀有30% / 史诗10%
+
 ---
 
 ## 未完成的 TODO
 
-### 紧急: 提交工作区修复
+### 紧急: 提交工作区改动
 
 - [ ] `yarn dev` 验证游戏能正常运行
-- [ ] TypeScript 编译检查 (`npx tsc --noEmit`)
-- [ ] Commit 所有 bug 修复 (C1/C2/I1/I2/I4/I5)
-
-### Phase 2: 房间系统 (v0.3)
-
-- [ ] **Task 2.1**: 创建 `RoomConfig` 接口 + 3个石窟房间模板 JSON
-- [ ] **Task 2.2**: 创建 `RoomGenerator` — 动态创建 Phaser 物理对象
-- [ ] **Task 2.3**: 创建 `RunScene` — 替代 GameScene, 基于房间的游戏循环
-
-### Phase 3: 据点世界 (v0.3)
-
-- [ ] **Task 3.1**: 创建 `HubScene` — NPC 交互区 + 走廊门入口
-- [ ] **Task 3.2**: 创建 `DeathScene` — 运行结算 + 统计展示
-
-### Phase 4: 祝福系统 (v0.4)
-
-- [ ] **Task 4.1**: 创建 `BlessingTable` + `BlessingManager` (装饰器模式)
-- [ ] **Task 4.2**: 创建 `BlessingSelectScene` — 3选1卡牌 UI
-- [ ] **Task 4.3**: 创建 `StatusEffects` — 灼烧/减速/连锁闪电
-
-### Phase 5: 敌人 & Boss (v0.5)
-
-- [ ] **Task 5.1**: 创建 `EnemyTable` + `EnemyFactory`
-- [ ] **Task 5.2**: 新石窟敌人: BombBugEnemy, EliteSkeletonEnemy
-- [ ] **Task 5.3**: Boss 1: StoneGolemBoss (3阶段)
-
-### Phase 6: 永久升级 (v0.6)
-
-- [ ] **Task 6.1**: `MetaProgress` + `UpgradeTable` 系统
-- [ ] **Task 6.2**: 记忆之镜升级 UI (`UpgradePanel`)
+- [ ] Commit Phase 4-6 所有文件
 
 ### Phase 7: 熔岩区域 (v0.7)
 

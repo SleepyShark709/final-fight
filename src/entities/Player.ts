@@ -35,6 +35,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     public criticalChance: number; // 暴击率
     public criticalMultiplier: number; // 暴击伤害倍率
 
+    // 移动速度（可被升级加成修改）
+    public moveSpeed: number;
+    // 冲刺冷却（可被升级加成修改）
+    public dashCooldownTime: number;
+
     // 武器（策略模式）
     public weapon: WeaponBase;
 
@@ -89,6 +94,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.attackDamage = PLAYER_CONFIG.attackDamage;
         this.criticalChance = PLAYER_CONFIG.criticalChance;
         this.criticalMultiplier = PLAYER_CONFIG.criticalMultiplier;
+        this.moveSpeed = PLAYER_CONFIG.speed;
+        this.dashCooldownTime = PLAYER_CONFIG.dashCooldown;
 
         // 添加到场景
         scene.add.existing(this);
@@ -137,6 +144,44 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             dash: keyboard.addKey(CONTROLS.DASH),
             weaponSkill: keyboard.addKey(CONTROLS.WEAPON_SKILL),
         };
+    }
+
+    /**
+     * 应用永久升级加成
+     * 在 RunScene.create() 中创建玩家后调用
+     */
+    public applyUpgradeBonuses(bonuses: {
+        maxHealth: number;
+        attackDamage: number;
+        speed: number;
+        critChance: number;
+        dashCooldown: number;
+    }): void {
+        if (bonuses.maxHealth > 0) {
+            this.maxHealth += bonuses.maxHealth;
+            this.health = this.maxHealth;
+        }
+        if (bonuses.attackDamage > 0) {
+            this.attackDamage += bonuses.attackDamage;
+        }
+        if (bonuses.speed > 0) {
+            this.moveSpeed += bonuses.speed;
+        }
+        if (bonuses.critChance > 0) {
+            this.criticalChance += bonuses.critChance;
+        }
+        if (bonuses.dashCooldown > 0) {
+            this.dashCooldownTime = Math.max(200, this.dashCooldownTime - bonuses.dashCooldown);
+        }
+        // 通知UI更新血量
+        this.scene.events.emit('player-health-changed', this.health, this.maxHealth);
+        console.log(`[Player] 升级加成: HP+${bonuses.maxHealth}, ATK+${bonuses.attackDamage}, SPD+${bonuses.speed}, CRIT+${(bonuses.critChance * 100).toFixed(0)}%, DASH-${bonuses.dashCooldown}ms`);
+    }
+
+    /** 回复生命值 */
+    public heal(amount: number): void {
+        this.health = Math.min(this.health + amount, this.maxHealth);
+        this.scene.events.emit('player-health-changed', this.health, this.maxHealth);
     }
 
     /**
@@ -255,11 +300,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         const body = this.body as Phaser.Physics.Arcade.Body;
 
         if (this.keys.left.isDown) {
-            body.setVelocityX(-PLAYER_CONFIG.speed);
+            body.setVelocityX(-this.moveSpeed);
             // this.facingDirection = -1; // Unused
             this.setFlipX(true);
         } else if (this.keys.right.isDown) {
-            body.setVelocityX(PLAYER_CONFIG.speed);
+            body.setVelocityX(this.moveSpeed);
             // this.facingDirection = 1; // Unused
             this.setFlipX(false);
         } else {
@@ -594,7 +639,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         });
 
         // 冷却时间
-        this.scene.time.delayedCall(PLAYER_CONFIG.dashCooldown, () => {
+        this.scene.time.delayedCall(this.dashCooldownTime, () => {
             this.canDash = true;
             console.log('[Dash] 冷却完成');
         });

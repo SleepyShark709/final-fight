@@ -14,6 +14,7 @@ import {
     ASSETS,
     ENEMY_CONFIG,
 } from '@/utils/Constants';
+import { ENEMY_TABLE } from '@/config/EnemyTable';
 import { Player } from '@/entities/Player';
 import { Enemy } from '@/entities/Enemy';
 import { ArcherEnemy } from '@/entities/ArcherEnemy';
@@ -27,7 +28,10 @@ import { BowWeapon } from '@/combat/weapons/BowWeapon';
 import { RoomGenerator, RoomObjects } from '@/core/RoomGenerator';
 import { RunManager } from '@/core/RunManager';
 import { RoomConfig } from '@/config/RoomConfig';
-import { CAVERN_COMBAT_ROOMS } from '@/data/rooms/cavern/index';
+import { CAVERN_COMBAT_ROOMS, CAVERN_BOSS_ROOM } from '@/data/rooms/cavern/index';
+import { BlessingManager } from '@/combat/BlessingManager';
+import { MetaProgress } from '@/core/MetaProgress';
+import { StoneGolemBoss } from '@/entities/bosses/StoneGolemBoss';
 
 /** 房间阶段 */
 enum RoomPhase {
@@ -50,6 +54,9 @@ export class RunScene extends Phaser.Scene {
     private roomPhase: RoomPhase = RoomPhase.LOADING;
     private currentRoomConfig!: RoomConfig;
 
+    // 祝福系统
+    private blessingManager!: BlessingManager;
+
     // 物理对象引用
     public player!: Player;
     public enemies!: Phaser.Physics.Arcade.Group;
@@ -61,6 +68,10 @@ export class RunScene extends Phaser.Scene {
     private sky?: Phaser.GameObjects.TileSprite;
     private mountains?: Phaser.GameObjects.TileSprite;
     private trees?: Phaser.GameObjects.TileSprite;
+
+    // 升级加成
+    public goldMultiplier: number = 1.0;
+    private blessingLuckBonus: number = 0;
 
     // UI
     private isPaused: boolean = false;
@@ -81,8 +92,8 @@ export class RunScene extends Phaser.Scene {
 
         // 初始化管理器
         this.runManager = new RunManager();
-        this.runManager.startRun();
         this.roomGenerator = new RoomGenerator(this);
+        this.blessingManager = new BlessingManager();
 
         // 输入
         this.inputController = new InputController(this);
@@ -92,6 +103,15 @@ export class RunScene extends Phaser.Scene {
 
         // 创建玩家
         this.createPlayer();
+
+        // 应用永久升级加成
+        const bonuses = MetaProgress.getStatBonuses();
+        this.player.applyUpgradeBonuses(bonuses);
+        this.goldMultiplier = bonuses.goldMultiplier;
+        this.blessingLuckBonus = bonuses.blessingLuckBonus;
+
+        // 启动运行（传入复活次数）
+        this.runManager.startRun(bonuses.revives);
 
         // 加载第一个房间
         this.loadRoom(this.pickRoom());
@@ -106,6 +126,15 @@ export class RunScene extends Phaser.Scene {
 
         // 监听玩家死亡
         this.events.on('player-died', this.handlePlayerDeath, this);
+
+        // 监听爆炸虫自爆
+        this.events.on('bomb-explosion', this.handleBombExplosion, this);
+
+        // 监听 Boss 地震波
+        this.events.on('boss-quake', this.handleBossQuake, this);
+
+        // 监听 Boss 击败
+        this.events.on('boss-defeated', this.handleBossDefeated, this);
 
         // 启动 UI 场景
         this.scene.launch(SCENES.UI, { parentScene: SCENES.RUN });
@@ -159,45 +188,81 @@ export class RunScene extends Phaser.Scene {
     }
 
     /**
-     * 房间清理完毕，创建出口
+     * 房间清理完毕，触发祝福选择
      */
     private onRoomCleared(): void {
         this.roomPhase = RoomPhase.CLEARED;
         console.log('[RunScene] 房间已清理！');
 
-        // 在出口位置创建可交互区域
-        const exitData = this.currentRoomConfig.exits[0];
-        if (exitData) {
-            this.exitZone = this.add.zone(exitData.x, exitData.y, 60, 80);
-            this.physics.add.existing(this.exitZone, true); // static body
+        // 触发祝福选择
+        this.showBlessingSelect();
+    }
 
-            // 可视化出口提示
-            const exitText = this.add.text(exitData.x, exitData.y - 60, '▶ 出口', {
-                fontSize: '16px',
-                color: '#00ff00',
-                stroke: '#000000',
-                strokeThickness: 3,
-            });
-            exitText.setOrigin(0.5);
-            exitText.setDepth(DEPTH.UI);
+    /**
+     * 显示祝福选择界面
+     */
+    private showBlessingSelect(): void {
+        // 暂停物理和动画
+        this.physics.pause();
 
-            // 出口闪烁
-            this.tweens.add({
-                targets: exitText,
-                alpha: 0.3,
-                duration: 600,
-                yoyo: true,
-                repeat: -1,
-            });
-
-            // 玩家碰到出口时触发过渡
-            this.physics.add.overlap(this.player, this.exitZone, () => {
-                if (this.roomPhase !== RoomPhase.CLEARED) return;
-                this.roomPhase = RoomPhase.TRANSITION;
-                exitText.destroy();
-                this.transitionToNextRoom();
-            });
+        // 禁用 RunScene 键盘输入，防止与 BlessingSelectScene 的按键冲突
+        if (this.input.keyboard) {
+            this.input.keyboard.enabled = false;
         }
+
+        // 监听祝福选择完成
+        this.events.once('blessing-selected', () => {
+            // 重新启用 RunScene 键盘输入
+            if (this.input.keyboard) {
+                this.input.keyboard.enabled = true;
+            }
+            // 恢复物理
+            this.physics.resume();
+            // 创建出口
+            this.createExit();
+        });
+
+        // 启动祝福选择场景
+        this.scene.launch(SCENES.BLESSING, {
+            blessingManager: this.blessingManager,
+            runManager: this.runManager,
+            luckBonus: this.blessingLuckBonus,
+        });
+    }
+
+    /**
+     * 创建房间出口
+     */
+    private createExit(): void {
+        const exitData = this.currentRoomConfig.exits[0];
+        if (!exitData) return;
+
+        this.exitZone = this.add.zone(exitData.x, exitData.y, 60, 80);
+        this.physics.add.existing(this.exitZone, true);
+
+        const exitText = this.add.text(exitData.x, exitData.y - 60, '▶ 出口', {
+            fontSize: '16px',
+            color: '#00ff00',
+            stroke: '#000000',
+            strokeThickness: 3,
+        });
+        exitText.setOrigin(0.5);
+        exitText.setDepth(DEPTH.UI);
+
+        this.tweens.add({
+            targets: exitText,
+            alpha: 0.3,
+            duration: 600,
+            yoyo: true,
+            repeat: -1,
+        });
+
+        this.physics.add.overlap(this.player, this.exitZone, () => {
+            if (this.roomPhase !== RoomPhase.CLEARED) return;
+            this.roomPhase = RoomPhase.TRANSITION;
+            exitText.destroy();
+            this.transitionToNextRoom();
+        });
     }
 
     /**
@@ -206,17 +271,14 @@ export class RunScene extends Phaser.Scene {
     private transitionToNextRoom(): void {
         const { isBossRoom } = this.runManager.advanceRoom();
 
-        if (isBossRoom) {
-            // TODO: 加载 Boss 房间
-            // 暂时视为通关
-            this.handleRunComplete();
-            return;
-        }
-
         // 淡出 → 加载新房间 → 淡入
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.loadRoom(this.pickRoom());
+            if (isBossRoom) {
+                this.loadRoom(CAVERN_BOSS_ROOM);
+            } else {
+                this.loadRoom(this.pickRoom());
+            }
             this.cameras.main.fadeIn(300, 0, 0, 0);
         });
     }
@@ -369,11 +431,13 @@ export class RunScene extends Phaser.Scene {
         if (!isAttackingTowardsEnemy) return;
         if (playerEntity.weapon.hitEnemiesThisAttack.has(enemyEntity)) return;
 
-        const isCritical = Math.random() < playerEntity.criticalChance;
+        const { critChanceBonus, critMultiplierBonus } = this.blessingManager.getCritBonus();
+        const isCritical = Math.random() < (playerEntity.criticalChance + critChanceBonus);
         const currentDamage = playerEntity.getCurrentDamage();
+        const { damage: blessedDamage, effects: statusEffects } = this.blessingManager.applyAttackModifiers(currentDamage, this.time.now);
         const finalDamage = isCritical
-            ? Math.round(currentDamage * playerEntity.criticalMultiplier)
-            : currentDamage;
+            ? Math.round(blessedDamage * (playerEntity.criticalMultiplier + critMultiplierBonus))
+            : blessedDamage;
 
         CameraShake.shake(this.cameras.main, isCritical ? ShakeIntensity.HEAVY : ShakeIntensity.LIGHT);
         DamageText.create(this, enemyEntity.x, enemyEntity.y - 30, finalDamage, isCritical ? DamageType.CRITICAL : DamageType.NORMAL);
@@ -386,6 +450,15 @@ export class RunScene extends Phaser.Scene {
         enemyEntity.takeDamage(finalDamage, knockbackDir);
         playerEntity.weapon.hitEnemiesThisAttack.add(enemyEntity);
         playerEntity.registerHit();
+
+        // 应用祝福状态效果
+        statusEffects.forEach((effect) => enemyEntity.addStatusEffect(effect));
+        // 生命偷取
+        const lifestealPercent = this.blessingManager.getLifestealPercent();
+        if (lifestealPercent > 0) {
+            const healAmount = Math.round(finalDamage * lifestealPercent);
+            playerEntity.heal(healAmount);
+        }
 
         // 追踪伤害
         this.runManager.addDamageDealt(finalDamage);
@@ -404,13 +477,16 @@ export class RunScene extends Phaser.Scene {
             (!enemyEntity.flipX && playerEntity.x > enemyEntity.x);
         if (!isAttackingTowardsPlayer) return;
 
+        const damageReduction = this.blessingManager.getDamageReduction();
+        const reducedDamage = Math.round(enemyEntity.attackDamage * (1 - damageReduction));
+
         CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
-        DamageText.create(this, playerEntity.x, playerEntity.y - 30, enemyEntity.attackDamage, DamageType.NORMAL);
+        DamageText.create(this, playerEntity.x, playerEntity.y - 30, reducedDamage, DamageType.NORMAL);
 
         const knockbackDirection = playerEntity.x < enemyEntity.x ? -1 : 1;
-        playerEntity.takeDamage(enemyEntity.attackDamage, knockbackDirection);
+        playerEntity.takeDamage(reducedDamage, knockbackDirection);
 
-        this.runManager.addDamageTaken(enemyEntity.attackDamage);
+        this.runManager.addDamageTaken(reducedDamage);
     };
 
     private handlePlayerEnemyPhysicsCollision = (player: any, enemy: any): void => {
@@ -450,6 +526,7 @@ export class RunScene extends Phaser.Scene {
         this.checkAttacksByDistance();
         this.checkProjectileHits();
         this.checkPlayerProjectileHits();
+        this.checkBossProjectileHits();
 
         // 检查房间是否清理完毕
         if (this.roomPhase === RoomPhase.COMBAT) {
@@ -508,11 +585,13 @@ export class RunScene extends Phaser.Scene {
                     (!this.player.flipX && enemyEntity.x > this.player.x);
 
                 if (isAttackingTowardsEnemy) {
-                    const isCritical = Math.random() < this.player.criticalChance;
+                    const { critChanceBonus, critMultiplierBonus } = this.blessingManager.getCritBonus();
+                    const isCritical = Math.random() < (this.player.criticalChance + critChanceBonus);
                     const currentDamage = this.player.getCurrentDamage();
+                    const { damage: blessedDamage, effects: distStatusEffects } = this.blessingManager.applyAttackModifiers(currentDamage, this.time.now);
                     const finalDamage = isCritical
-                        ? Math.round(currentDamage * this.player.criticalMultiplier)
-                        : currentDamage;
+                        ? Math.round(blessedDamage * (this.player.criticalMultiplier + critMultiplierBonus))
+                        : blessedDamage;
 
                     CameraShake.shake(this.cameras.main, isCritical ? ShakeIntensity.HEAVY : ShakeIntensity.LIGHT);
                     DamageText.create(this, enemyEntity.x, enemyEntity.y - 30, finalDamage, isCritical ? DamageType.CRITICAL : DamageType.NORMAL);
@@ -525,6 +604,16 @@ export class RunScene extends Phaser.Scene {
                     enemyEntity.takeDamage(finalDamage, knockbackDir);
                     this.player.weapon.hitEnemiesThisAttack.add(enemyEntity);
                     this.player.registerHit();
+
+                    // 应用祝福状态效果
+                    distStatusEffects.forEach((effect) => enemyEntity.addStatusEffect(effect));
+                    // 生命偷取
+                    const distLifesteal = this.blessingManager.getLifestealPercent();
+                    if (distLifesteal > 0) {
+                        const healAmount = Math.round(finalDamage * distLifesteal);
+                        this.player.heal(healAmount);
+                    }
+
                     this.runManager.addDamageDealt(finalDamage);
                 }
             }
@@ -541,11 +630,13 @@ export class RunScene extends Phaser.Scene {
                     (!enemyEntity.flipX && this.player.x > enemyEntity.x);
 
                 if (isAttackingTowardsPlayer) {
+                    const distDmgReduction = this.blessingManager.getDamageReduction();
+                    const distReducedDamage = Math.round(enemyEntity.attackDamage * (1 - distDmgReduction));
                     CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
-                    DamageText.create(this, this.player.x, this.player.y - 30, enemyEntity.attackDamage, DamageType.NORMAL);
+                    DamageText.create(this, this.player.x, this.player.y - 30, distReducedDamage, DamageType.NORMAL);
                     const knockbackDirection = this.player.x < enemyEntity.x ? -1 : 1;
-                    this.player.takeDamage(enemyEntity.attackDamage, knockbackDirection);
-                    this.runManager.addDamageTaken(enemyEntity.attackDamage);
+                    this.player.takeDamage(distReducedDamage, knockbackDirection);
+                    this.runManager.addDamageTaken(distReducedDamage);
                 }
             }
         });
@@ -573,14 +664,18 @@ export class RunScene extends Phaser.Scene {
                 const dx = Math.abs(proj.x - this.player.x);
                 const dy = Math.abs(proj.y - this.player.y);
                 if (dx < 30 && dy < 35) {
+                    // 应用祝福减伤
+                    const projDmgReduction = this.blessingManager.getDamageReduction();
+                    const projReducedDamage = Math.round(archer.attackDamage * (1 - projDmgReduction));
+
                     CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
-                    DamageText.create(this, this.player.x, this.player.y - 30, archer.attackDamage, DamageType.NORMAL);
+                    DamageText.create(this, this.player.x, this.player.y - 30, projReducedDamage, DamageType.NORMAL);
                     const knockDir = proj.body
                         ? (proj.body as Phaser.Physics.Arcade.Body).velocity.x > 0 ? -1 : 1
                         : 0;
-                    this.player.takeDamage(archer.attackDamage, knockDir);
+                    this.player.takeDamage(projReducedDamage, knockDir);
                     archer.destroyProjectile(proj);
-                    this.runManager.addDamageTaken(archer.attackDamage);
+                    this.runManager.addDamageTaken(projReducedDamage);
                 }
             }
         });
@@ -604,11 +699,13 @@ export class RunScene extends Phaser.Scene {
                 const dx = Math.abs(proj.x - enemyEntity.x);
                 const dy = Math.abs(proj.y - enemyEntity.y);
                 if (dx < 30 && dy < 35) {
-                    const isCritical = Math.random() < this.player.criticalChance;
+                    const { critChanceBonus, critMultiplierBonus } = this.blessingManager.getCritBonus();
+                    const isCritical = Math.random() < (this.player.criticalChance + critChanceBonus);
                     const baseDamage = this.player.getCurrentDamage();
+                    const { damage: blessedDamage, effects: statusEffects } = this.blessingManager.applyAttackModifiers(baseDamage, this.time.now);
                     const finalDamage = isCritical
-                        ? Math.round(baseDamage * this.player.criticalMultiplier)
-                        : baseDamage;
+                        ? Math.round(blessedDamage * (this.player.criticalMultiplier + critMultiplierBonus))
+                        : blessedDamage;
 
                     CameraShake.shake(this.cameras.main, isCritical ? ShakeIntensity.HEAVY : ShakeIntensity.LIGHT);
                     DamageText.create(this, enemyEntity.x, enemyEntity.y - 30, finalDamage, isCritical ? DamageType.CRITICAL : DamageType.NORMAL);
@@ -621,10 +718,123 @@ export class RunScene extends Phaser.Scene {
                     this.player.registerHit();
                     bowWeapon.destroyProjectile(proj);
                     this.runManager.addDamageDealt(finalDamage);
+
+                    // 应用祝福状态效果
+                    statusEffects.forEach((effect) => enemyEntity.addStatusEffect(effect));
+                    // 生命偷取
+                    const lifestealPercent = this.blessingManager.getLifestealPercent();
+                    if (lifestealPercent > 0) {
+                        const healAmount = Math.round(finalDamage * lifestealPercent);
+                        this.player.heal(healAmount);
+                    }
                 }
             });
         }
     }
+
+    /**
+     * 检测 Boss 岩石投射物是否命中玩家
+     */
+    private checkBossProjectileHits(): void {
+        if (this.player.isInvincible) return;
+
+        this.enemies?.getChildren().forEach((enemy) => {
+            const boss = enemy as StoneGolemBoss;
+            if (!(boss instanceof StoneGolemBoss) || boss.isDead) return;
+
+            for (const rock of [...boss.rocks]) {
+                if (!rock.active) {
+                    boss.destroyRock(rock);
+                    continue;
+                }
+
+                // 超出世界边界销毁
+                if (rock.y > GAME_HEIGHT + 50 || rock.x < -50 || rock.x > this.currentRoomConfig.size.width + 50) {
+                    boss.destroyRock(rock);
+                    continue;
+                }
+
+                const dx = Math.abs(rock.x - this.player.x);
+                const dy = Math.abs(rock.y - this.player.y);
+                if (dx < 30 && dy < 35) {
+                    const dmgReduction = this.blessingManager.getDamageReduction();
+                    const reducedDamage = Math.round(
+                        ((ENEMY_TABLE.stone_golem.extra?.rockDamage as number) || 20) * (1 - dmgReduction),
+                    );
+                    CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
+                    DamageText.create(this, this.player.x, this.player.y - 30, reducedDamage, DamageType.NORMAL);
+                    const knockDir = rock.body
+                        ? (rock.body as Phaser.Physics.Arcade.Body).velocity.x > 0 ? -1 : 1
+                        : 0;
+                    this.player.takeDamage(reducedDamage, knockDir);
+                    boss.destroyRock(rock);
+                    this.runManager.addDamageTaken(reducedDamage);
+                }
+            }
+        });
+    }
+
+    /**
+     * 处理爆炸虫自爆伤害
+     */
+    private handleBombExplosion = (data: { x: number; y: number; damage: number; radius: number }): void => {
+        if (this.player.isInvincible) return;
+
+        const distToPlayer = Phaser.Math.Distance.Between(data.x, data.y, this.player.x, this.player.y);
+        if (distToPlayer <= data.radius) {
+            const dmgReduction = this.blessingManager.getDamageReduction();
+            const reducedDamage = Math.round(data.damage * (1 - dmgReduction));
+
+            CameraShake.shake(this.cameras.main, ShakeIntensity.HEAVY);
+            DamageText.create(this, this.player.x, this.player.y - 30, reducedDamage, DamageType.NORMAL);
+            const knockDir = this.player.x < data.x ? -1 : 1;
+            this.player.takeDamage(reducedDamage, knockDir);
+            this.runManager.addDamageTaken(reducedDamage);
+        }
+    };
+
+    /**
+     * 处理 Boss 地震波伤害
+     */
+    private handleBossQuake = (data: { x: number; y: number; damage: number; range: number }): void => {
+        if (this.player.isInvincible) return;
+
+        const distToPlayer = Phaser.Math.Distance.Between(data.x, data.y, this.player.x, this.player.y);
+        // 地震波只对地面上的玩家有效
+        const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+        const isOnGround = playerBody.onFloor();
+
+        if (distToPlayer <= data.range && isOnGround) {
+            const dmgReduction = this.blessingManager.getDamageReduction();
+            const reducedDamage = Math.round(data.damage * (1 - dmgReduction));
+
+            CameraShake.shake(this.cameras.main, ShakeIntensity.HEAVY);
+            DamageText.create(this, this.player.x, this.player.y - 30, reducedDamage, DamageType.NORMAL);
+            const knockDir = this.player.x < data.x ? -1 : 1;
+            this.player.takeDamage(reducedDamage, knockDir);
+            this.runManager.addDamageTaken(reducedDamage);
+        }
+    };
+
+    /**
+     * Boss 击败处理
+     */
+    private handleBossDefeated = (_data: { bossId: string; bossName: string }): void => {
+        // Boss 击败后，推进到下一个区域或通关
+        this.time.delayedCall(2000, () => {
+            const isComplete = this.runManager.advanceBiome();
+            if (isComplete) {
+                this.handleRunComplete();
+            } else {
+                // 进入下一个区域
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.loadRoom(this.pickRoom());
+                    this.cameras.main.fadeIn(500, 0, 0, 0);
+                });
+            }
+        });
+    };
 
     // ===== 系统 =====
 
@@ -655,6 +865,19 @@ export class RunScene extends Phaser.Scene {
     }
 
     private handlePlayerDeath(): void {
+        // 检查死亡抗拒（复活）
+        if (this.runManager.useDeathDefiance()) {
+            this.player.health = Math.round(this.player.maxHealth * 0.3);
+            (this.player.body as Phaser.Physics.Arcade.Body).enable = true;
+            this.player.isInvincible = true;
+            this.events.emit('player-health-changed', this.player.health, this.player.maxHealth);
+            this.time.delayedCall(2000, () => {
+                this.player.isInvincible = false;
+            });
+            console.log('[RunScene] 死亡抗拒触发！剩余:', this.runManager.getState().deathDefiances);
+            return;
+        }
+
         const finalState = this.runManager.endRun();
         this.time.delayedCall(2000, () => {
             this.roomGenerator.cleanup();

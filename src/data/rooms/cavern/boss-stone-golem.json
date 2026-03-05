@@ -1,0 +1,20 @@
+{
+    "id": "cavern-boss-stone-golem",
+    "biome": "cavern",
+    "type": "boss",
+    "size": { "width": 1200, "height": 540 },
+    "playerSpawn": { "x": 100, "y": 380 },
+    "groundY": 508,
+    "platforms": [
+        { "x": 300, "y": 380, "tileCount": 6 },
+        { "x": 900, "y": 380, "tileCount": 6 },
+        { "x": 600, "y": 300, "tileCount": 4 }
+    ],
+    "spawns": [
+        { "type": "stone_golem", "x": 800, "y": 380 }
+    ],
+    "hazards": [],
+    "exits": [
+        { "position": "right", "x": 1170, "y": 440 }
+    ]
+}

@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { Player } from './Player';
 import { EffectsManager } from '../utils/EffectsManager';
+import { StatusEffect, StatusEffectProcessor, STATUS_EFFECT_COLORS } from '@/combat/StatusEffects';
 
 // 敌人状态枚举
 export enum EnemyState {
@@ -56,6 +57,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     // 受击硬直状态
     protected isStunned: boolean = false;
 
+    // 状态效果
+    public statusEffects: StatusEffect[] = [];
+    private originalSpeed: number = 0;
+    private isSlowed: boolean = false;
+
     // 预备攻击状态（防止动画被覆盖）
     protected isPreparing: boolean = false;
 
@@ -96,6 +102,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
         // 创建血条
         this.createHealthBar();
+
+        // 记录原始速度（用于减速效果恢复）
+        this.originalSpeed = config.speed;
     }
 
     /**
@@ -129,6 +138,74 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
         // 更新血条位置
         this.updateHealthBarPosition();
+
+        // 处理状态效果
+        this.processStatusEffects(time, _delta);
+    }
+
+    /**
+     * 处理状态效果
+     */
+    protected processStatusEffects(time: number, delta: number): void {
+        if (this.statusEffects.length === 0) return;
+
+        this.statusEffects = StatusEffectProcessor.process(
+            this.statusEffects,
+            time,
+            delta,
+            // 伤害回调 (灼烧)
+            (damage: number) => {
+                if (this.isDead) return;
+                this.health -= damage;
+                this.updateHealthBar();
+                // 灼烧视觉：短暂变色
+                this.setTint(STATUS_EFFECT_COLORS.burn);
+                this.scene.time.delayedCall(100, () => {
+                    if (!this.isDead) this.clearTint();
+                });
+                if (this.health <= 0 && !this.isDead) {
+                    this.die();
+                }
+            },
+            // 减速回调
+            (slowPercent: number) => {
+                this.isSlowed = true;
+                this.config.speed = this.originalSpeed * (1 - slowPercent);
+                // 减速视觉：蓝色色调
+                if (!this.isStunned) {
+                    this.setTint(STATUS_EFFECT_COLORS.slow);
+                }
+            },
+            // 连锁闪电回调 — 暂时仅对自身造成伤害，后续可扩展扩散
+            (damage: number) => {
+                if (this.isDead) return;
+                this.health -= damage;
+                this.updateHealthBar();
+                this.setTint(STATUS_EFFECT_COLORS.chain);
+                this.scene.time.delayedCall(100, () => {
+                    if (!this.isDead) this.clearTint();
+                });
+                if (this.health <= 0 && !this.isDead) {
+                    this.die();
+                }
+            },
+            this.x,
+            this.y,
+        );
+
+        // 如果减速效果结束，恢复原始速度
+        if (this.isSlowed && !this.statusEffects.some((e) => e.type === 'slow')) {
+            this.isSlowed = false;
+            this.config.speed = this.originalSpeed;
+            if (!this.isStunned) this.clearTint();
+        }
+    }
+
+    /**
+     * 添加状态效果
+     */
+    public addStatusEffect(effect: StatusEffect): void {
+        this.statusEffects = StatusEffectProcessor.addEffect(this.statusEffects, effect);
     }
 
     /**

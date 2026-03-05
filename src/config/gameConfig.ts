@@ -13,6 +13,8 @@ import { HubScene } from '../scenes/HubScene';
 import { DeathScene } from '../scenes/DeathScene';
 import { GameOverScene } from '../scenes/GameOverScene';
 import { WinScene } from '../scenes/WinScene';
+import { BlessingSelectScene } from '../scenes/BlessingSelectScene';
+import { UpgradeScene } from '../scenes/UpgradeScene';
 
 // Phaser 游戏配置对象
 export const gameConfig: Phaser.Types.Core.GameConfig = {
@@ -51,7 +53,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     },
 
     // 游戏场景列表
-    scene: [BootScene, MenuScene, GameScene, RunScene, HubScene, DeathScene, UIScene, GameOverScene, WinScene],
+    scene: [BootScene, MenuScene, GameScene, RunScene, HubScene, DeathScene, BlessingSelectScene, UpgradeScene, UIScene, GameOverScene, WinScene],
 
     // 输入设置
     input: {

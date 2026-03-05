@@ -548,12 +548,9 @@ export class HubScene extends Phaser.Scene {
             return;
         }
 
-        // 记忆之镜交互
+        // 记忆之镜交互 → 打开升级面板
         if (this.activeMirror) {
-            this.startDialog([
-                '记忆之镜：过往的回忆在镜面中浮现……',
-                '记忆之镜：（尚未开放）',
-            ]);
+            this.openUpgradePanel();
             return;
         }
     }
@@ -581,6 +578,24 @@ export class HubScene extends Phaser.Scene {
         } else {
             this.dialogText.setText(this.dialogLines[this.dialogLineIndex]);
         }
+    }
+
+    /** 打开升级面板（覆盖层） */
+    private openUpgradePanel(): void {
+        // 禁用 HubScene 键盘防止冲突
+        if (this.input.keyboard) {
+            this.input.keyboard.enabled = false;
+        }
+
+        // 监听关闭事件
+        this.events.once('upgrade-panel-closed', () => {
+            if (this.input.keyboard) {
+                this.input.keyboard.enabled = true;
+            }
+        });
+
+        // 启动升级场景覆盖层
+        this.scene.launch(SCENES.UPGRADE);
     }
 
     // ----------------------------------------------------------------

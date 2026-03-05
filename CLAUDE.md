@@ -115,3 +115,4 @@ Uses Phaser's **Arcade Physics** with gravity (800 px/s²). Static platforms for
 - All tuning values belong in `Constants.ts` — never hardcode balance numbers in entity/system code
 - New enemy types: extend `Enemy` base class, add config to `ENEMY_CONFIG` in Constants.ts, implement `playAttackAnimation()` and `updateAnimation()` abstract methods
 - Comments and variable names are in Chinese (中文) throughout the codebase
+- **永远使用中文回答用户问题和进行对话**
