@@ -1,10 +1,12 @@
+import { ASSETS, VFX_CONFIG } from '../utils/Constants';
+
 /**
  * 战斗视觉特效管理器
- * 使用 Phaser Graphics 程序生成，无需外部资源
+ * 使用 spritesheet 动画播放特效
  */
 export class EffectsManager {
     /**
-     * 创建斩击特效（攻击命中时在目标位置显示斩击线）
+     * 创建斩击特效（攻击命中时在目标位置播放斩击动画）
      * @param scene Phaser 场景
      * @param x 特效中心 X
      * @param y 特效中心 Y
@@ -18,49 +20,38 @@ export class EffectsManager {
         facingRight: boolean,
         isCritical: boolean = false,
     ): void {
-        const dir = facingRight ? 1 : -1;
-        const size = isCritical ? 52 : 38;
-        const color = isCritical ? 0xffaa00 : 0xffffff;
-        const lineWidth = isCritical ? 5 : 3;
+        // 创建斩击精灵，使用第一帧纹理
+        const slash = scene.add.sprite(x, y, `${ASSETS.VFX_SLASH}-1`);
+        slash.setDepth(VFX_CONFIG.slash.depth);
 
-        const g = scene.add.graphics();
-        g.setDepth(45);
-        g.setPosition(x, y);
-
-        // 主斩线
-        g.lineStyle(lineWidth, color, 1.0);
-        g.beginPath();
-        g.moveTo(dir * 6, -size * 0.65);
-        g.lineTo(dir * size, size * 0.45);
-        g.strokePath();
-
-        // 辅助斩线（偏移，降低透明度）
-        g.lineStyle(lineWidth - 1, color, 0.55);
-        g.beginPath();
-        g.moveTo(dir * 6, -size * 0.85);
-        g.lineTo(dir * size, size * 0.2);
-        g.strokePath();
-
-        g.lineStyle(lineWidth - 1, color, 0.35);
-        g.beginPath();
-        g.moveTo(dir * 6, -size * 0.4);
-        g.lineTo(dir * size, size * 0.65);
-        g.strokePath();
-
-        // 暴击额外光晕
+        // 根据是否暴击设置缩放和着色
+        const baseScale = isCritical ? VFX_CONFIG.slash.critScale : VFX_CONFIG.slash.normalScale;
+        slash.setScale(baseScale);
         if (isCritical) {
-            g.fillStyle(0xffdd00, 0.25);
-            g.fillCircle(dir * size * 0.6, 0, 22);
+            slash.setTint(0xffdd00);
         }
 
+        // 根据朝向翻转（朝左时 flipX = true）
+        slash.setFlipX(!facingRight);
+
+        // 设置原点偏移，斩击弧在画布右下位置
+        slash.setOrigin(0.55, 0.65);
+
+        // 播放斩击动画
+        slash.play(ASSETS.VFX_SLASH);
+
+        // 动画完成后销毁精灵
+        slash.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+            slash.destroy();
+        });
+
+        // 轻微膨胀 tween，从当前缩放到 1.15 倍
         scene.tweens.add({
-            targets: g,
-            alpha: 0,
-            scaleX: 1.45,
-            scaleY: 1.45,
-            duration: 180,
-            ease: 'Power2',
-            onComplete: () => g.destroy(),
+            targets: slash,
+            scaleX: baseScale * 1.15,
+            scaleY: baseScale * 1.15,
+            duration: 200,
+            ease: 'Power1',
         });
     }
 
@@ -77,39 +68,24 @@ export class EffectsManager {
         y: number,
         isCritical: boolean = false,
     ): void {
-        const count = isCritical ? 10 : 6;
-        const colors = isCritical
-            ? [0xffaa00, 0xff6600, 0xffff00, 0xffffff, 0xff4400]
-            : [0xffffff, 0xffddcc, 0xff9999];
+        // 使用小型爆炸 spritesheet 动画替代程序生成粒子
+        const sprite = scene.add.sprite(x, y, ASSETS.VFX_EXPLOSION_SMALL);
+        sprite.setDepth(45);
 
-        for (let i = 0; i < count; i++) {
-            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-            const speed = Phaser.Math.Between(70, isCritical ? 200 : 140);
-            const size = Phaser.Math.Between(2, isCritical ? 5 : 4);
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            const duration = Phaser.Math.Between(180, 360);
-
-            const g = scene.add.graphics();
-            g.setDepth(45);
-            g.fillStyle(color, 1);
-            g.fillCircle(0, 0, size);
-            g.setPosition(
-                x + Phaser.Math.Between(-8, 8),
-                y + Phaser.Math.Between(-8, 8),
-            );
-
-            scene.tweens.add({
-                targets: g,
-                x: g.x + Math.cos(angle) * speed * 0.4,
-                y: g.y + Math.sin(angle) * speed * 0.4,
-                alpha: 0,
-                scaleX: 0.1,
-                scaleY: 0.1,
-                duration,
-                ease: 'Power1',
-                onComplete: () => g.destroy(),
-            });
+        if (isCritical) {
+            // 暴击：放大 + 金色染色
+            sprite.setScale(1.5);
+            sprite.setTint(0xffaa00);
+        } else {
+            // 普通命中
+            sprite.setScale(VFX_CONFIG.explosionSmall.scale);
         }
+
+        // 播放动画，完成后销毁
+        sprite.play(ASSETS.VFX_EXPLOSION_SMALL);
+        sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+            sprite.destroy();
+        });
     }
 
     /**
@@ -123,40 +99,16 @@ export class EffectsManager {
         x: number,
         y: number,
     ): void {
-        const count = 14;
-        const colors = [0xff2200, 0xff6600, 0xffaa00, 0xffffff, 0x888888, 0xffdd00];
+        // 使用爆炸 spritesheet 动画替代程序生成粒子
+        const sprite = scene.add.sprite(x, y, ASSETS.VFX_EXPLOSION);
+        sprite.setDepth(45);
+        sprite.setScale(VFX_CONFIG.explosion.scale);
 
-        for (let i = 0; i < count; i++) {
-            const angle = (i / count) * Math.PI * 2 + Phaser.Math.FloatBetween(-0.3, 0.3);
-            const speed = Phaser.Math.Between(90, 240);
-            const size = Phaser.Math.Between(3, 9);
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            const duration = Phaser.Math.Between(350, 650);
-
-            const g = scene.add.graphics();
-            g.setDepth(45);
-            g.fillStyle(color, 1);
-            // 交替矩形/圆形粒子，增加视觉多样性
-            if (i % 2 === 0) {
-                g.fillRect(-size / 2, -size / 2, size, size);
-            } else {
-                g.fillCircle(0, 0, size / 2);
-            }
-            g.setPosition(
-                x + Phaser.Math.Between(-18, 18),
-                y + Phaser.Math.Between(-18, 18),
-            );
-
-            scene.tweens.add({
-                targets: g,
-                x: g.x + Math.cos(angle) * speed * 0.55,
-                y: g.y + Math.sin(angle) * speed * 0.55,
-                alpha: 0,
-                duration,
-                ease: 'Power2',
-                onComplete: () => g.destroy(),
-            });
-        }
+        // 播放动画，完成后销毁
+        sprite.play(ASSETS.VFX_EXPLOSION);
+        sprite.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+            sprite.destroy();
+        });
     }
 
     /**

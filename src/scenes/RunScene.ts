@@ -28,10 +28,13 @@ import { BowWeapon } from '@/combat/weapons/BowWeapon';
 import { RoomGenerator, RoomObjects } from '@/core/RoomGenerator';
 import { RunManager } from '@/core/RunManager';
 import { RoomConfig } from '@/config/RoomConfig';
-import { CAVERN_COMBAT_ROOMS, CAVERN_BOSS_ROOM } from '@/data/rooms/cavern/index';
+import { CAVERN_COMBAT_ROOMS, CAVERN_ELITE_ROOMS, CAVERN_BOSS_ROOM } from '@/data/rooms/cavern/index';
+import { LAVA_COMBAT_ROOMS, LAVA_ELITE_ROOMS, LAVA_BOSS_ROOM } from '@/data/rooms/lava/index';
 import { BlessingManager } from '@/combat/BlessingManager';
 import { MetaProgress } from '@/core/MetaProgress';
 import { StoneGolemBoss } from '@/entities/bosses/StoneGolemBoss';
+import { FireMageEnemy } from '@/entities/enemies/FireMageEnemy';
+import { EnemyFactory } from '@/entities/EnemyFactory';
 
 /** 房间阶段 */
 enum RoomPhase {
@@ -91,9 +94,19 @@ export class RunScene extends Phaser.Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0);
 
         // 初始化管理器
-        this.runManager = new RunManager();
         this.roomGenerator = new RoomGenerator(this);
         this.blessingManager = new BlessingManager();
+
+        // 检查是否从暂停运行恢复
+        const resumedManager = RunManager.resumeFromPause();
+        if (resumedManager) {
+            this.runManager = resumedManager;
+            // 恢复祝福状态
+            const blessings = this.runManager.getState().activeBlessings;
+            blessings.forEach(id => this.blessingManager.addBlessingById(id));
+        } else {
+            this.runManager = new RunManager();
+        }
 
         // 输入
         this.inputController = new InputController(this);
@@ -110,8 +123,10 @@ export class RunScene extends Phaser.Scene {
         this.goldMultiplier = bonuses.goldMultiplier;
         this.blessingLuckBonus = bonuses.blessingLuckBonus;
 
-        // 启动运行（传入复活次数）
-        this.runManager.startRun(bonuses.revives);
+        // 仅新运行时启动（恢复的运行已有状态）
+        if (!resumedManager) {
+            this.runManager.startRun(bonuses.revives);
+        }
 
         // 加载第一个房间
         this.loadRoom(this.pickRoom());
@@ -136,6 +151,10 @@ export class RunScene extends Phaser.Scene {
         // 监听 Boss 击败
         this.events.on('boss-defeated', this.handleBossDefeated, this);
 
+        // 监听动态敌人生成（史莱姆分裂、Boss召唤等）
+        this.events.on('enemy-spawned', this.handleEnemySpawned, this);
+        this.events.on('boss-summon', this.handleBossSummon, this);
+
         // 启动 UI 场景
         this.scene.launch(SCENES.UI, { parentScene: SCENES.RUN });
     }
@@ -146,9 +165,18 @@ export class RunScene extends Phaser.Scene {
      * 随机选一个当前区域的房间模板
      */
     private pickRoom(): RoomConfig {
-        // 目前只有石窟区域
-        const rooms = CAVERN_COMBAT_ROOMS;
-        return rooms[Phaser.Math.Between(0, rooms.length - 1)];
+        const biome = this.runManager.getCurrentBiome();
+        const roomIndex = this.runManager.getCurrentRoom();
+
+        // 选择当前区域的房间池
+        const combatRooms = biome === 0 ? CAVERN_COMBAT_ROOMS : LAVA_COMBAT_ROOMS;
+        const eliteRooms = biome === 0 ? CAVERN_ELITE_ROOMS : LAVA_ELITE_ROOMS;
+
+        // 每3个房间出现一次精英房间
+        if (roomIndex > 0 && roomIndex % 3 === 0 && eliteRooms.length > 0) {
+            return eliteRooms[Phaser.Math.Between(0, eliteRooms.length - 1)];
+        }
+        return combatRooms[Phaser.Math.Between(0, combatRooms.length - 1)];
     }
 
     /**
@@ -278,7 +306,9 @@ export class RunScene extends Phaser.Scene {
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
             if (isBossRoom) {
-                this.loadRoom(CAVERN_BOSS_ROOM);
+                const biome = this.runManager.getCurrentBiome();
+                const bossRoom = biome === 0 ? CAVERN_BOSS_ROOM : LAVA_BOSS_ROOM;
+                this.loadRoom(bossRoom);
             } else {
                 this.loadRoom(this.pickRoom());
             }
@@ -298,7 +328,9 @@ export class RunScene extends Phaser.Scene {
     // ===== 创建方法 =====
 
     private createParallaxBackground(): void {
-        this.cameras.main.setBackgroundColor('#2a1a3a'); // 石窟暗紫色
+        const biome = this.runManager.getCurrentBiome();
+        const bgColor = biome === 0 ? '#2a1a3a' : '#3a1a1a'; // 石窟暗紫 / 熔岩暗红
+        this.cameras.main.setBackgroundColor(bgColor);
 
         this.sky = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, ASSETS.SKY_BACKGROUND);
         this.sky.setOrigin(0, 0);
@@ -649,39 +681,51 @@ export class RunScene extends Phaser.Scene {
         if (this.player.isInvincible) return;
 
         this.enemies?.getChildren().forEach((enemy) => {
-            const archer = enemy as ArcherEnemy;
-            if (!(archer instanceof ArcherEnemy) || archer.isDead) return;
-
-            for (const proj of [...archer.projectiles]) {
-                if (!proj.active) {
-                    archer.destroyProjectile(proj);
-                    continue;
-                }
-
-                const worldWidth = this.currentRoomConfig.size.width;
-                if (proj.x < 0 || proj.x > worldWidth || proj.y < 0 || proj.y > GAME_HEIGHT + 100) {
-                    archer.destroyProjectile(proj);
-                    continue;
-                }
-
-                const dx = Math.abs(proj.x - this.player.x);
-                const dy = Math.abs(proj.y - this.player.y);
-                if (dx < 30 && dy < 35) {
-                    // 应用祝福减伤
-                    const projDmgReduction = this.blessingManager.getDamageReduction();
-                    const projReducedDamage = Math.round(archer.attackDamage * (1 - projDmgReduction));
-
-                    CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
-                    DamageText.create(this, this.player.x, this.player.y - 30, projReducedDamage, DamageType.NORMAL);
-                    const knockDir = proj.body
-                        ? (proj.body as Phaser.Physics.Arcade.Body).velocity.x > 0 ? -1 : 1
-                        : 0;
-                    this.player.takeDamage(projReducedDamage, knockDir);
-                    archer.destroyProjectile(proj);
-                    this.runManager.addDamageTaken(projReducedDamage);
-                }
+            // 弓箭手投射物
+            if (enemy instanceof ArcherEnemy && !enemy.isDead) {
+                this.checkEnemyProjectiles(enemy, enemy.projectiles, enemy.attackDamage);
+            }
+            // 火法师投射物
+            if (enemy instanceof FireMageEnemy && !enemy.isDead) {
+                this.checkEnemyProjectiles(enemy, enemy.projectiles, enemy.attackDamage);
             }
         });
+    }
+
+    /** 通用敌人投射物检测 */
+    private checkEnemyProjectiles(
+        owner: { destroyProjectile(proj: any): void; attackDamage: number },
+        projectiles: (Phaser.Physics.Arcade.Sprite | Phaser.Physics.Arcade.Image)[],
+        damage: number,
+    ): void {
+        for (const proj of [...projectiles]) {
+            if (!proj.active) {
+                owner.destroyProjectile(proj);
+                continue;
+            }
+
+            const worldWidth = this.currentRoomConfig.size.width;
+            if (proj.x < 0 || proj.x > worldWidth || proj.y < 0 || proj.y > GAME_HEIGHT + 100) {
+                owner.destroyProjectile(proj);
+                continue;
+            }
+
+            const dx = Math.abs(proj.x - this.player.x);
+            const dy = Math.abs(proj.y - this.player.y);
+            if (dx < 30 && dy < 35) {
+                const projDmgReduction = this.blessingManager.getDamageReduction();
+                const projReducedDamage = Math.round(damage * (1 - projDmgReduction));
+
+                CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
+                DamageText.create(this, this.player.x, this.player.y - 30, projReducedDamage, DamageType.NORMAL);
+                const knockDir = proj.body
+                    ? (proj.body as Phaser.Physics.Arcade.Body).velocity.x > 0 ? -1 : 1
+                    : 0;
+                this.player.takeDamage(projReducedDamage, knockDir);
+                owner.destroyProjectile(proj);
+                this.runManager.addDamageTaken(projReducedDamage);
+            }
+        }
     }
 
     private checkPlayerProjectileHits(): void {
@@ -829,14 +873,34 @@ export class RunScene extends Phaser.Scene {
             if (isComplete) {
                 this.handleRunComplete();
             } else {
-                // 进入下一个区域
+                // 暂停运行，回到据点休整
+                this.runManager.pauseRun();
                 this.cameras.main.fadeOut(500, 0, 0, 0);
                 this.cameras.main.once('camerafadeoutcomplete', () => {
-                    this.loadRoom(this.pickRoom());
-                    this.cameras.main.fadeIn(500, 0, 0, 0);
+                    this.roomGenerator.cleanup();
+                    this.scene.stop(SCENES.UI);
+                    this.scene.start(SCENES.HUB);
                 });
             }
         });
+    };
+
+    /** 处理动态敌人生成（史莱姆分裂） */
+    private handleEnemySpawned = (enemy: Enemy): void => {
+        if (!this.enemies) return;
+        this.enemies.add(enemy);
+        enemy.setCollideWorldBounds(true);
+        this.physics.add.collider(enemy, this.platforms);
+    };
+
+    /** 处理 Boss 召唤小怪 */
+    private handleBossSummon = (data: { type: string; x: number; y: number }): void => {
+        if (!this.enemies) return;
+        const enemy = EnemyFactory.create(data.type, this, data.x, data.y);
+        enemy.setDepth(DEPTH.ENEMIES);
+        this.enemies.add(enemy);
+        enemy.setCollideWorldBounds(true);
+        this.physics.add.collider(enemy, this.platforms);
     };
 
     // ===== 系统 =====

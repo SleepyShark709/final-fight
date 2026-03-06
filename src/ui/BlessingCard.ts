@@ -4,11 +4,11 @@
  */
 import Phaser from 'phaser';
 import { BlessingData } from '@/config/BlessingConfig';
-import { BLESSING } from '@/utils/Constants';
+import { ASSETS, BLESSING } from '@/utils/Constants';
 
 export class BlessingCard extends Phaser.GameObjects.Container {
     private blessing: BlessingData;
-    private bg!: Phaser.GameObjects.Graphics;
+    private bg!: Phaser.GameObjects.NineSlice;
     private index: number;
 
     static readonly CARD_WIDTH = 220;
@@ -30,14 +30,20 @@ export class BlessingCard extends Phaser.GameObjects.Container {
         const W = BlessingCard.CARD_WIDTH;
         const H = BlessingCard.CARD_HEIGHT;
 
-        // 卡牌背景
-        this.bg = this.scene.add.graphics();
-        this.bg.fillStyle(0x1a1a2e, 0.95);
-        this.bg.fillRoundedRect(-W / 2, -H / 2, W, H, 12);
-        // 边框
-        this.bg.lineStyle(2, BLESSING.RARITY_COLORS[this.blessing.rarity], 1);
-        this.bg.strokeRoundedRect(-W / 2, -H / 2, W, H, 12);
+        // 卡牌背景（Ancient 风格 NineSlice 面板）
+        this.bg = this.scene.add.nineslice(
+            0, 0, ASSETS.UI_PANEL_BROWN, undefined,
+            W, H, 8, 8, 8, 8
+        );
+        this.bg.setOrigin(0.5);
+        this.bg.setAlpha(0.95);
         this.add(this.bg);
+
+        // 稀有度边框
+        const border = this.scene.add.graphics();
+        border.lineStyle(2, BLESSING.RARITY_COLORS[this.blessing.rarity], 1);
+        border.strokeRoundedRect(-W / 2, -H / 2, W, H, 12);
+        this.add(border);
 
         // 神明图标圆形
         const godColor = BLESSING.GOD_COLORS[this.blessing.god];
@@ -86,19 +92,32 @@ export class BlessingCard extends Phaser.GameObjects.Container {
         line.lineBetween(-W / 2 + 20, -H / 2 + 145, W / 2 - 20, -H / 2 + 145);
         this.add(line);
 
-        // 效果描述（自动换行）
-        const descText = this.scene.add.text(0, -H / 2 + 160, this.blessing.description, {
-            fontSize: '13px',
+        // 效果描述（自动换行，超长时自动缩小字体避免与键位提示重叠）
+        const descY = -H / 2 + 160;
+        const maxDescBottom = H / 2 - 45;
+        let descFontSize = 13;
+        const minDescFontSize = 10;
+
+        const descText = this.scene.add.text(0, descY, this.blessing.description, {
+            fontSize: `${descFontSize}px`,
             color: '#cccccc',
             wordWrap: { width: W - 40 },
             lineSpacing: 4,
             align: 'center',
         });
         descText.setOrigin(0.5, 0);
+
+        // 逐步缩小字体直到描述不溢出
+        while (descText.y + descText.height > maxDescBottom && descFontSize > minDescFontSize) {
+            descFontSize--;
+            descText.setFontSize(descFontSize);
+        }
         this.add(descText);
 
-        // 底部键位提示
-        const keyText = this.scene.add.text(0, H / 2 - 25, `按 ${this.index + 1} 选择`, {
+        // 底部键位提示（确保不与描述重叠）
+        const descBottom = descText.y + descText.height;
+        const keyY = Math.max(descBottom + 15, H / 2 - 25);
+        const keyText = this.scene.add.text(0, keyY, `按 ${this.index + 1} 选择`, {
             fontSize: '14px', color: '#666688',
         });
         keyText.setOrigin(0.5);
@@ -108,22 +127,12 @@ export class BlessingCard extends Phaser.GameObjects.Container {
     /** 高亮/取消选中效果 */
     setSelected(selected: boolean): void {
         if (selected) {
-            this.bg.clear();
-            const W = BlessingCard.CARD_WIDTH;
-            const H = BlessingCard.CARD_HEIGHT;
-            this.bg.fillStyle(0x2a2a4e, 0.98);
-            this.bg.fillRoundedRect(-W / 2, -H / 2, W, H, 12);
-            this.bg.lineStyle(3, BLESSING.GOD_COLORS[this.blessing.god], 1);
-            this.bg.strokeRoundedRect(-W / 2, -H / 2, W, H, 12);
+            // 选中态：切换为亮色面板 + 放大
+            this.bg.setTexture(ASSETS.UI_PANEL_TAN);
             this.setScale(1.05);
         } else {
-            this.bg.clear();
-            const W = BlessingCard.CARD_WIDTH;
-            const H = BlessingCard.CARD_HEIGHT;
-            this.bg.fillStyle(0x1a1a2e, 0.95);
-            this.bg.fillRoundedRect(-W / 2, -H / 2, W, H, 12);
-            this.bg.lineStyle(2, BLESSING.RARITY_COLORS[this.blessing.rarity], 1);
-            this.bg.strokeRoundedRect(-W / 2, -H / 2, W, H, 12);
+            // 普通态：切换为暗色面板 + 恢复缩放
+            this.bg.setTexture(ASSETS.UI_PANEL_BROWN);
             this.setScale(1.0);
         }
     }

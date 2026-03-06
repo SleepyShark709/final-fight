@@ -16,6 +16,16 @@ export class BlessingManager {
         console.log(`[BlessingManager] 添加祝福: ${blessing.name}`);
     }
 
+    /** 通过ID添加祝福（从 BLESSING_TABLE 查找） */
+    addBlessingById(id: string): void {
+        const data = BLESSING_TABLE.find(b => b.id === id);
+        if (data) {
+            this.addBlessing(data);
+        } else {
+            console.warn(`[BlessingManager] 未找到祝福: ${id}`);
+        }
+    }
+
     /** 移除祝福 */
     removeBlessing(blessingId: string): void {
         this.activeBlessings.delete(blessingId);

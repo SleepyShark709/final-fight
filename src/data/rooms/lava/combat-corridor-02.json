@@ -1,0 +1,25 @@
+{
+    "id": "lava-combat-corridor-02",
+    "biome": "lava",
+    "type": "combat",
+    "size": { "width": 1440, "height": 540 },
+    "playerSpawn": { "x": 100, "y": 380 },
+    "groundY": 508,
+    "platforms": [
+        { "x": 300, "y": 370, "tileCount": 5 },
+        { "x": 700, "y": 300, "tileCount": 6 },
+        { "x": 1100, "y": 370, "tileCount": 5 }
+    ],
+    "spawns": [
+        { "type": "lava_slime", "x": 350, "y": 240 },
+        { "type": "lava_slime", "x": 550, "y": 380 },
+        { "type": "fire_mage", "x": 750, "y": 170 },
+        { "type": "fire_bat", "x": 1000, "y": 200 }
+    ],
+    "hazards": [
+        { "type": "lava", "x": 550, "y": 510, "width": 120, "height": 30 }
+    ],
+    "exits": [
+        { "position": "right", "x": 1410, "y": 440 }
+    ]
+}

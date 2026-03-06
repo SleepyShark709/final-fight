@@ -74,10 +74,24 @@ export class ArcherEnemy extends Enemy {
         this.setFlipX(player.x < this.x);
 
         if (distanceToPlayer <= CFG.minDistance) {
-            // 太近了：后退远离玩家
-            this.currentState = EnemyState.CHASE;
+            // 太近了：检查背后是否有足够空间后退
             const retreatDir = this.x > player.x ? 1 : -1;
-            body.setVelocityX(retreatDir * CFG.speed);
+            const worldBounds = this.scene.physics.world.bounds;
+            const margin = 40; // 距离边界的安全边距
+            const hasSpaceToRetreat = retreatDir > 0
+                ? this.x < worldBounds.right - margin
+                : this.x > worldBounds.left + margin;
+
+            if (hasSpaceToRetreat) {
+                // 有空间：后退远离玩家
+                this.currentState = EnemyState.CHASE;
+                body.setVelocityX(retreatDir * CFG.speed);
+            } else {
+                // 背后是墙：原地攻击
+                body.setVelocityX(0);
+                this.currentState = EnemyState.ATTACK;
+                this.attack(player);
+            }
         } else if (distanceToPlayer <= CFG.attackRange) {
             // 理想攻击范围：停下来射击
             body.setVelocityX(0);

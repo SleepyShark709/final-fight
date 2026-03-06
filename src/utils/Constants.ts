@@ -196,12 +196,51 @@ export const ASSETS = {
     // 投射物
     PROJECTILE: 'projectile',
 
+    // 斩击VFX
+    VFX_SLASH: 'vfx-slash',
+    // 爆炸VFX
+    VFX_EXPLOSION: 'vfx-explosion',
+    VFX_EXPLOSION_SMALL: 'vfx-explosion-small',
+    // 熔岩魔像
+    ENEMY_LAVA_GOLEM: 'lava-golem',
+    // Ancient UI面板
+    UI_PANEL_TAN: 'panel-ancient-tan',
+    UI_PANEL_BROWN: 'panel-ancient-brown',
+    UI_PANEL_GREY: 'panel-ancient-grey',
+    UI_PANEL_TAN_INLAY: 'panel-ancient-tan-inlay',
+    UI_PANEL_BROWN_INLAY: 'panel-ancient-brown-inlay',
+
     // 地形
     TILESET_GRASS: 'tileset-grass',
     ENV_TILE: 'env-tile', // 环境贴图
     SKY_BACKGROUND: 'sky-background', // 天空背景
     MOUNTAINS_BACKGROUND: 'mountains-background', // 远山背景
     TREES_BACKGROUND: 'trees-background', // 树林背景
+};
+
+// ===== VFX 配置 =====
+export const VFX_CONFIG = {
+    slash: {
+        frameCount: 7,
+        normalScale: 0.1,     // 738 * 0.1 ≈ 74px
+        critScale: 0.14,      // 738 * 0.14 ≈ 103px
+        frameRate: 28,        // 7帧/~250ms
+        depth: 45,
+    },
+    explosion: {
+        frameCount: 12,
+        frameWidth: 96,
+        frameHeight: 96,
+        frameRate: 15,
+        scale: 1.0,
+    },
+    explosionSmall: {
+        frameCount: 8,
+        frameWidth: 32,
+        frameHeight: 32,
+        frameRate: 20,
+        scale: 1.2,
+    },
 };
 
 // ===== 图层深度 =====
@@ -248,4 +287,16 @@ export const UPGRADE = {
     /** 卡片间距 */
     GAP_X: 20,
     GAP_Y: 20,
+};
+
+// ===== 属性面板常量 =====
+export const STATS_PANEL = {
+    WIDTH: 320,
+    HEIGHT: 500,
+    PADDING_TOP: 50,
+    PADDING_BOTTOM: 30,
+    PADDING_LEFT: 20,
+    FONT_SIZE: 14,
+    LINE_SPACING: 4,
+    SCROLL_SPEED: 30,
 };

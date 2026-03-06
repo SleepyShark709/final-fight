@@ -1,0 +1,22 @@
+{
+    "id": "lava-combat-platforms-01",
+    "biome": "lava",
+    "type": "combat",
+    "size": { "width": 1200, "height": 540 },
+    "playerSpawn": { "x": 100, "y": 380 },
+    "groundY": 508,
+    "platforms": [
+        { "x": 300, "y": 380, "tileCount": 5 },
+        { "x": 650, "y": 310, "tileCount": 5 },
+        { "x": 950, "y": 240, "tileCount": 4 }
+    ],
+    "spawns": [
+        { "type": "fire_bat", "x": 500, "y": 200 },
+        { "type": "fire_mage", "x": 700, "y": 180 },
+        { "type": "lava_slime", "x": 400, "y": 380 }
+    ],
+    "hazards": [],
+    "exits": [
+        { "position": "right", "x": 1170, "y": 440 }
+    ]
+}

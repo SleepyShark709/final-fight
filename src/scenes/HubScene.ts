@@ -13,6 +13,7 @@ import {
 } from '@/utils/Constants';
 import { Player } from '@/entities/Player';
 import { InputController } from '@/systems/InputController';
+import { RunManager } from '@/core/RunManager';
 
 // ===== NPC 配置 =====
 interface NpcConfig {
@@ -99,6 +100,7 @@ export class HubScene extends Phaser.Scene {
     private dialogLines: string[] = [];
     private dialogLineIndex: number = 0;
     private isTransitioning: boolean = false; // 正在切场景
+    private hasPausedRun: boolean = false; // 是否有暂停的运行
     private enterKey!: Phaser.Input.Keyboard.Key; // Enter 键用于推进对话
 
     constructor() {
@@ -127,6 +129,9 @@ export class HubScene extends Phaser.Scene {
 
         // 创建记忆之镜
         this.createMirror();
+
+        // 检测是否有暂停的运行
+        this.hasPausedRun = RunManager.hasPausedRun();
 
         // 创建回廊之门（传送门）
         this.createGate();
@@ -418,6 +423,20 @@ export class HubScene extends Phaser.Scene {
             })
             .setOrigin(0.5, 1)
             .setDepth(DEPTH.UI);
+
+        // 如果有暂停运行，显示"继续探索"
+        if (this.hasPausedRun) {
+            this.add
+                .text(gx, gy + gateHeight / 2 + 16, '▶ 继续探索', {
+                    fontSize: '11px',
+                    color: '#ffcc44',
+                    fontFamily: 'monospace',
+                    stroke: '#000000',
+                    strokeThickness: 3,
+                })
+                .setOrigin(0.5, 0)
+                .setDepth(DEPTH.UI);
+        }
 
         // 交互 Zone
         this.gateZone = this.add.zone(gx, gy, gateWidth + 30, gateHeight + 20);

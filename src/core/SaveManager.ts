@@ -166,4 +166,33 @@ export class SaveManager {
         this.save();
         return newData;
     }
+
+    // ===== 暂停运行存储 =====
+    private static readonly PAUSED_RUN_KEY = 'final-fight-v2-paused-run';
+
+    static savePausedRun(runState: Record<string, unknown>): void {
+        try {
+            localStorage.setItem(this.PAUSED_RUN_KEY, JSON.stringify(runState));
+        } catch (e) {
+            console.error('[SaveManager] Failed to save paused run', e);
+        }
+    }
+
+    static loadPausedRun(): Record<string, unknown> | null {
+        try {
+            const raw = localStorage.getItem(this.PAUSED_RUN_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch (e) {
+            console.warn('[SaveManager] Failed to load paused run', e);
+        }
+        return null;
+    }
+
+    static hasPausedRun(): boolean {
+        return localStorage.getItem(this.PAUSED_RUN_KEY) !== null;
+    }
+
+    static clearPausedRun(): void {
+        localStorage.removeItem(this.PAUSED_RUN_KEY);
+    }
 }

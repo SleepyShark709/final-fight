@@ -9,6 +9,7 @@ import {
     ANIMATION_FRAMES,
     PLAYER_ATTACK_TYPES,
     ENEMY_CONFIG,
+    VFX_CONFIG,
 } from '../utils/Constants';
 import { DECORATIONS } from '../systems/DecorationManager';
 
@@ -100,6 +101,41 @@ export class BootScene extends Phaser.Scene {
                 `assets/environment/tiles/${filename}`,
             );
         }
+
+        // ===== 加载斩击VFX（7张逐帧PNG） =====
+        for (let i = 1; i <= VFX_CONFIG.slash.frameCount; i++) {
+            this.load.image(
+                `${ASSETS.VFX_SLASH}-${i}`,
+                `assets/ai-vfx/vfx_slash${i}.png`,
+            );
+        }
+
+        // ===== 加载爆炸VFX（spritesheet） =====
+        this.load.spritesheet(
+            ASSETS.VFX_EXPLOSION,
+            'assets/ai-vfx/explosion.png',
+            { frameWidth: VFX_CONFIG.explosion.frameWidth, frameHeight: VFX_CONFIG.explosion.frameHeight },
+        );
+        this.load.spritesheet(
+            ASSETS.VFX_EXPLOSION_SMALL,
+            'assets/ai-vfx/explosion_animated.png',
+            { frameWidth: VFX_CONFIG.explosionSmall.frameWidth, frameHeight: VFX_CONFIG.explosionSmall.frameHeight },
+        );
+
+        // ===== 加载熔岩魔像（12张逐帧PNG） =====
+        for (let i = 1; i <= 12; i++) {
+            this.load.image(
+                `${ASSETS.ENEMY_LAVA_GOLEM}-${i}`,
+                `assets/ai-enemies/lava_golem/Frame ${i}.png`,
+            );
+        }
+
+        // ===== 加载Ancient UI面板 =====
+        this.load.image(ASSETS.UI_PANEL_TAN, 'assets/ai-ui/panels/Ancient/tan.png');
+        this.load.image(ASSETS.UI_PANEL_BROWN, 'assets/ai-ui/panels/Ancient/brown.png');
+        this.load.image(ASSETS.UI_PANEL_GREY, 'assets/ai-ui/panels/Ancient/grey.png');
+        this.load.image(ASSETS.UI_PANEL_TAN_INLAY, 'assets/ai-ui/panels/Ancient/tan_inlay.png');
+        this.load.image(ASSETS.UI_PANEL_BROWN_INLAY, 'assets/ai-ui/panels/Ancient/brown_inlay.png');
 
         // 加载天空背景
         this.load.image(
@@ -266,6 +302,59 @@ export class BootScene extends Phaser.Scene {
         this.anims.create({
             key: 'skeleton-attack',
             frames: generateFrames(ASSETS.ENEMY_SKELETON_ATTACK, 8),
+            frameRate: 10,
+            repeat: 0,
+        });
+
+        // ===== 斩击VFX动画 =====
+        this.anims.create({
+            key: ASSETS.VFX_SLASH,
+            frames: Array.from({ length: VFX_CONFIG.slash.frameCount }, (_, i) => ({
+                key: `${ASSETS.VFX_SLASH}-${i + 1}`,
+            })),
+            frameRate: VFX_CONFIG.slash.frameRate,
+            repeat: 0,
+        });
+
+        // ===== 爆炸VFX动画 =====
+        this.anims.create({
+            key: ASSETS.VFX_EXPLOSION,
+            frames: this.anims.generateFrameNumbers(ASSETS.VFX_EXPLOSION, {
+                start: 0,
+                end: VFX_CONFIG.explosion.frameCount - 1,
+            }),
+            frameRate: VFX_CONFIG.explosion.frameRate,
+            repeat: 0,
+        });
+        this.anims.create({
+            key: ASSETS.VFX_EXPLOSION_SMALL,
+            frames: this.anims.generateFrameNumbers(ASSETS.VFX_EXPLOSION_SMALL, {
+                start: 0,
+                end: VFX_CONFIG.explosionSmall.frameCount - 1,
+            }),
+            frameRate: VFX_CONFIG.explosionSmall.frameRate,
+            repeat: 0,
+        });
+
+        // ===== 熔岩魔像动画 =====
+        const golemFrames = Array.from({ length: 12 }, (_, i) => ({
+            key: `${ASSETS.ENEMY_LAVA_GOLEM}-${i + 1}`,
+        }));
+        this.anims.create({
+            key: 'lava-golem-idle',
+            frames: golemFrames,
+            frameRate: 6,
+            repeat: -1,
+        });
+        this.anims.create({
+            key: 'lava-golem-walk',
+            frames: golemFrames,
+            frameRate: 8,
+            repeat: -1,
+        });
+        this.anims.create({
+            key: 'lava-golem-attack',
+            frames: golemFrames.slice(6, 12), // 帧7-12用于攻击
             frameRate: 10,
             repeat: 0,
         });

@@ -1,0 +1,21 @@
+{
+    "id": "lava-combat-flat-01",
+    "biome": "lava",
+    "type": "combat",
+    "size": { "width": 1440, "height": 540 },
+    "playerSpawn": { "x": 100, "y": 380 },
+    "groundY": 508,
+    "platforms": [],
+    "spawns": [
+        { "type": "lava_slime", "x": 500, "y": 380 },
+        { "type": "lava_slime", "x": 900, "y": 380 },
+        { "type": "fire_mage", "x": 1100, "y": 380 }
+    ],
+    "hazards": [
+        { "type": "lava", "x": 0, "y": 510, "width": 120, "height": 30 },
+        { "type": "lava", "x": 1320, "y": 510, "width": 120, "height": 30 }
+    ],
+    "exits": [
+        { "position": "right", "x": 1410, "y": 440 }
+    ]
+}

@@ -19,6 +19,7 @@ export class RoomGenerator {
     private platforms: Phaser.Physics.Arcade.StaticGroup | null = null;
     private enemies: Phaser.Physics.Arcade.Group | null = null;
     private hazards: Phaser.GameObjects.GameObject[] = [];
+    private currentConfig: RoomConfig | null = null;
 
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
@@ -29,6 +30,7 @@ export class RoomGenerator {
      */
     generate(config: RoomConfig): RoomObjects {
         this.cleanup();
+        this.currentConfig = config;
 
         // 设置世界边界
         this.scene.physics.world.setBounds(0, 0, config.size.width, config.size.height);
@@ -66,6 +68,9 @@ export class RoomGenerator {
                 `${ASSETS.TILESET_GRASS}-${tileIndex}`,
             ) as Phaser.Physics.Arcade.Sprite;
             ground.setScale(0.5);
+            if (config.biome === 'lava') {
+                ground.setTint(0xff6644);
+            }
             ground.refreshBody();
         }
     }
@@ -85,6 +90,9 @@ export class RoomGenerator {
             ) as Phaser.Physics.Arcade.Sprite;
             tile.setScale(0.5);
             tile.setDepth(DEPTH.TILEMAP);
+            if (this.currentConfig?.biome === 'lava') {
+                tile.setTint(0xff6644);
+            }
             tile.refreshBody();
         }
     }
@@ -98,6 +106,8 @@ export class RoomGenerator {
         const enemy = EnemyFactory.create(type, this.scene, x, y);
         enemy.setDepth(DEPTH.ENEMIES);
         this.enemies.add(enemy);
+        // 加入 group 后重新确保世界边界碰撞生效
+        enemy.setCollideWorldBounds(true);
     }
 
     /**

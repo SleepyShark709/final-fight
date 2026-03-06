@@ -12,7 +12,7 @@ export interface PlatformData {
 
 /** 敌人生成点 */
 export interface SpawnData {
-    type: 'skeleton' | 'archer' | 'shield' | 'flying'; // 敌人类型
+    type: string; // 敌人类型ID（对应 EnemyTable/EnemyFactory 中的 key）
     x: number;
     y: number;
 }

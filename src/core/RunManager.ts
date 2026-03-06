@@ -2,6 +2,7 @@
  * 运行管理器
  * 管理单次运行(Run)的状态：当前区域、房间进度、祝福列表、临时资源
  */
+import { SaveManager } from './SaveManager';
 
 export interface RunState {
     // 当前进度
@@ -118,6 +119,31 @@ export class RunManager {
     endRun(): RunState {
         this.state.isRunActive = false;
         return { ...this.state };
+    }
+
+    /** 暂停运行（Boss击败后回据点） */
+    pauseRun(): void {
+        this.state.isRunActive = false;
+        SaveManager.savePausedRun(this.state as unknown as Record<string, unknown>);
+        console.log('[RunManager] Run paused at biome', this.state.currentBiome);
+    }
+
+    /** 从暂停状态恢复运行 */
+    static resumeFromPause(): RunManager | null {
+        const raw = SaveManager.loadPausedRun();
+        if (!raw) return null;
+
+        const manager = new RunManager();
+        manager.state = raw as unknown as RunState;
+        manager.state.isRunActive = true;
+        SaveManager.clearPausedRun();
+        console.log('[RunManager] Run resumed at biome', manager.state.currentBiome);
+        return manager;
+    }
+
+    /** 检查是否有暂停的运行 */
+    static hasPausedRun(): boolean {
+        return SaveManager.hasPausedRun();
     }
 
     getState(): Readonly<RunState> {

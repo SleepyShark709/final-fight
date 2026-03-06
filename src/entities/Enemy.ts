@@ -141,6 +141,31 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
         // 处理状态效果
         this.processStatusEffects(time, _delta);
+
+        // 确保敌人不超出世界边界（击退时 body 偏移可能导致 sprite 视觉越界）
+        this.clampToWorldBounds();
+    }
+
+    /**
+     * 将敌人位置限制在世界边界内
+     */
+    protected clampToWorldBounds(): void {
+        const body = this.body as Phaser.Physics.Arcade.Body;
+        if (!body || !body.enable) return;
+        const bounds = this.scene.physics.world.bounds;
+        // 用 body 的实际边缘来计算 sprite 的有效范围
+        const bodyOffsetLeft = body.x - this.x;
+        const bodyOffsetRight = (body.x + body.width) - this.x;
+        const minX = bounds.left - bodyOffsetLeft;
+        const maxX = bounds.right - bodyOffsetRight;
+        if (this.x < minX) {
+            this.x = minX;
+            if (body.velocity.x < 0) body.velocity.x = 0;
+        }
+        if (this.x > maxX) {
+            this.x = maxX;
+            if (body.velocity.x > 0) body.velocity.x = 0;
+        }
     }
 
     /**

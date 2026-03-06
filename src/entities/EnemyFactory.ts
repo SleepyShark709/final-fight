@@ -10,7 +10,13 @@ import { ShieldEnemy } from './ShieldEnemy';
 import { FlyingEnemy } from './FlyingEnemy';
 import { BombBugEnemy } from './enemies/BombBugEnemy';
 import { EliteSkeletonEnemy } from './enemies/EliteSkeletonEnemy';
+import { LavaGolemEnemy } from './enemies/LavaGolemEnemy';
 import { StoneGolemBoss } from './bosses/StoneGolemBoss';
+import { FireBatEnemy } from './enemies/FireBatEnemy';
+import { FireMageEnemy } from './enemies/FireMageEnemy';
+import { LavaSlimeEnemy } from './enemies/LavaSlimeEnemy';
+import { MagmaKnightEnemy } from './enemies/MagmaKnightEnemy';
+import { FireDragonBoss } from './bosses/FireDragonBoss';
 
 /** 敌人构造函数类型 */
 type EnemyConstructor = new (scene: Phaser.Scene, x: number, y: number) => Enemy;
@@ -23,7 +29,14 @@ const ENEMY_REGISTRY: Record<string, EnemyConstructor> = {
     flying: FlyingEnemy,
     bomb_bug: BombBugEnemy,
     elite_skeleton: EliteSkeletonEnemy,
+    lava_golem: LavaGolemEnemy,
     stone_golem: StoneGolemBoss,
+    // 熔岩区
+    fire_bat: FireBatEnemy,
+    fire_mage: FireMageEnemy,
+    lava_slime: LavaSlimeEnemy,
+    magma_knight: MagmaKnightEnemy,
+    fire_dragon: FireDragonBoss,
 };
 
 export class EnemyFactory {

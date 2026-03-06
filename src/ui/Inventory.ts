@@ -3,7 +3,7 @@
  * 按 I 键打开/关闭
  */
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, DEPTH } from '../utils/Constants';
+import { ASSETS, GAME_WIDTH, GAME_HEIGHT, DEPTH } from '../utils/Constants';
 
 // 物品接口
 export interface InventoryItem {
@@ -61,24 +61,13 @@ export class Inventory {
             GAME_HEIGHT,
         );
 
-        // 背包面板背景
-        const panel = this.scene.add.graphics();
-        panel.fillStyle(0x2a2a4a, 0.95);
-        panel.fillRoundedRect(
-            -panelWidth / 2,
-            -panelHeight / 2,
-            panelWidth,
-            panelHeight,
-            16,
+        // 背包面板背景（Ancient 风格 NineSlice 面板）
+        const panel = this.scene.add.nineslice(
+            0, 0, ASSETS.UI_PANEL_TAN, undefined,
+            panelWidth, panelHeight, 8, 8, 8, 8
         );
-        panel.lineStyle(3, 0x6a6aaa, 1);
-        panel.strokeRoundedRect(
-            -panelWidth / 2,
-            -panelHeight / 2,
-            panelWidth,
-            panelHeight,
-            16,
-        );
+        panel.setOrigin(0.5);
+        panel.setAlpha(0.95);
 
         // 标题
         const title = this.scene.add.text(0, -panelHeight / 2 + 30, '背包', {
@@ -113,7 +102,7 @@ export class Inventory {
             -((this.GRID_ROWS - 1) * (this.SLOT_SIZE + this.SLOT_PADDING)) / 2 +
             20;
 
-        const slots: Phaser.GameObjects.Graphics[] = [];
+        const slots: Phaser.GameObjects.NineSlice[] = [];
 
         for (let row = 0; row < this.GRID_ROWS; row++) {
             for (let col = 0; col < this.GRID_COLS; col++) {
@@ -122,23 +111,12 @@ export class Inventory {
                 const y =
                     gridStartY + row * (this.SLOT_SIZE + this.SLOT_PADDING);
 
-                const slot = this.scene.add.graphics();
-                slot.fillStyle(0x1a1a3a, 1);
-                slot.fillRoundedRect(
-                    x - this.SLOT_SIZE / 2,
-                    y - this.SLOT_SIZE / 2,
-                    this.SLOT_SIZE,
-                    this.SLOT_SIZE,
-                    8,
+                // 物品格子（Ancient 风格 NineSlice 内嵌面板）
+                const slot = this.scene.add.nineslice(
+                    x, y, ASSETS.UI_PANEL_BROWN_INLAY, undefined,
+                    this.SLOT_SIZE, this.SLOT_SIZE, 8, 8, 8, 8
                 );
-                slot.lineStyle(2, 0x4a4a7a, 1);
-                slot.strokeRoundedRect(
-                    x - this.SLOT_SIZE / 2,
-                    y - this.SLOT_SIZE / 2,
-                    this.SLOT_SIZE,
-                    this.SLOT_SIZE,
-                    8,
-                );
+                slot.setOrigin(0.5);
 
                 slots.push(slot);
             }

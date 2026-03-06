@@ -169,11 +169,21 @@ export class DeathScene extends Phaser.Scene {
             btnText.setColor('#ffffff');
         });
 
-        btnZone.on('pointerdown', () => {
+        let transitioning = false;
+        const goToHub = () => {
+            if (transitioning) return;
+            transitioning = true;
             this.cameras.main.fadeOut(400, 0, 0, 0);
             this.cameras.main.once('camerafadeoutcomplete', () => {
                 this.scene.start(SCENES.HUB);
             });
+        };
+
+        btnZone.on('pointerdown', goToHub);
+
+        // 键盘支持：任意键返回据点（延迟启用，避免误触）
+        this.time.delayedCall(1500, () => {
+            this.input.keyboard?.on('keydown', goToHub);
         });
 
         // --- 淡入动画 ---
