@@ -37,13 +37,14 @@ export class UIScene extends Phaser.Scene {
         super({ key: SCENES.UI });
     }
 
+    private parentSceneKey?: string;
+
     create(data?: { parentScene?: string }): void {
         // 创建血条
         this.healthBar = new HealthBar(this, 20, 20, 200, 20);
 
         // 创建背包
         this.inventory = new Inventory(this);
-        this.inventory.hide();
 
         // 创建暂停菜单
         this.createPauseMenu();
@@ -52,8 +53,8 @@ export class UIScene extends Phaser.Scene {
         this.createComboCounter();
 
         // 获取父场景（支持 GameScene 和 RunScene）
-        const parentSceneKey = data?.parentScene || SCENES.GAME;
-        const gameScene = this.scene.get(parentSceneKey) as any;
+        this.parentSceneKey = data?.parentScene || SCENES.GAME;
+        const gameScene = this.scene.get(this.parentSceneKey) as any;
 
         // 先尝试直接获取player
         if (gameScene?.player) {
@@ -84,6 +85,13 @@ export class UIScene extends Phaser.Scene {
         // 背包快捷键
         this.input.keyboard?.on(`keydown-${CONTROLS.INVENTORY}`, () => {
             this.inventory.toggle();
+        });
+
+        // 场景关闭时清理跨场景事件监听器
+        this.events.on('shutdown', () => {
+            gameScene?.events.off('player-created');
+            gameScene?.events.off('combo-count-changed');
+            this.input.keyboard?.removeAllListeners();
         });
     }
 

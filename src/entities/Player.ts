@@ -34,6 +34,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     public attackDamage: number;
     public criticalChance: number; // 暴击率
     public criticalMultiplier: number; // 暴击伤害倍率
+    private attackUpgradeBonus: number = 0; // 升级攻击力加成（独立追踪）
 
     // 移动速度（可被升级加成修改）
     public moveSpeed: number;
@@ -46,8 +47,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // 受击硬直状态
     private isStunned: boolean = false;
 
-    // 无敌状态
-    public isInvincible: boolean = false;
+    // 无敌状态（多来源管理，避免冲刺/受伤互相覆盖）
+    private invincibleReasons: Set<string> = new Set();
+    public get isInvincible(): boolean {
+        return this.invincibleReasons.size > 0;
+    }
+    public addInvincible(reason: string): void {
+        this.invincibleReasons.add(reason);
+    }
+    public removeInvincible(reason: string): void {
+        this.invincibleReasons.delete(reason);
+    }
+
+    // 死亡状态
+    public isDead: boolean = false;
 
     // 当前状态
     private currentState: PlayerState = PlayerState.IDLE;
@@ -163,6 +176,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         }
         if (bonuses.attackDamage > 0) {
             this.attackDamage += bonuses.attackDamage;
+            this.attackUpgradeBonus += bonuses.attackDamage;
         }
         if (bonuses.speed > 0) {
             this.moveSpeed += bonuses.speed;
@@ -182,36 +196,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     public heal(amount: number): void {
         this.health = Math.min(this.health + amount, this.maxHealth);
         this.scene.events.emit('player-health-changed', this.health, this.maxHealth);
-    }
-
-    /**
-     * 受到攻击/击退
-     * @param direction 击退方向 (1 或 -1)
-     */
-    public hit(direction: number): void {
-        if (this.isInvincible) return;
-
-        this.currentState = PlayerState.HURT;
-        // 无敌状态在 takeDamage 里设置，或者这里
-        // 这里主要处理物理和视觉
-
-        const body = this.body as Phaser.Physics.Arcade.Body;
-        body.setVelocityX(direction * PLAYER_CONFIG.knockbackForce);
-        body.setVelocityY(-200); // 给一点向上的力，避免地面摩擦
-
-        // 变红反馈
-        this.setTint(0xff0000);
-
-        // 播放受伤动画（如果没有专用动画，暂停在当前帧或播放特定帧）
-        // 这里我们要防止它切回 run/idle
-
-        this.scene.time.delayedCall(300, () => {
-            this.clearTint();
-            // 恢复控制
-            if (this.health > 0) {
-                this.currentState = PlayerState.IDLE;
-            }
-        });
     }
 
     /**
@@ -244,16 +228,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
-     * 获取当前攻击伤害（委托给武器）
+     * 获取当前攻击伤害（武器基础伤害 + 升级加成）
      */
     public getCurrentDamage(): number {
-        return this.weapon.getCurrentDamage();
+        return this.weapon.getCurrentDamage() + this.attackUpgradeBonus;
     }
 
     /**
      * 每帧更新
      */
     update(_time: number, _delta: number): void {
+        if (this.isDead) return;
+
         // 每帧更新武器（如 BowWeapon 的投射物清理）
         this.weapon.update(_time, _delta);
 
@@ -421,6 +407,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
      * 受到伤害
      */
     public takeDamage(damage: number, knockbackDir: number = 0): void {
+        if (this.isDead) return;
+
         console.log('[Player] takeDamage called:', {
             damage,
             knockbackDir,
@@ -454,7 +442,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         }
 
         // 进入无敌状态（不改变currentState，让玩家继续操作）
-        this.isInvincible = true;
+        this.invincibleReasons.add('hurt');
         // ❌ 删除：this.currentState = PlayerState.HURT;
 
         // 击退效果
@@ -482,7 +470,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             duration: 100,
             repeat: 9, // 闪烁10次，持续1秒
             onComplete: () => {
-                this.isInvincible = false;
+                this.invincibleReasons.delete('hurt');
                 this.clearTint();
                 this.setAlpha(1); // 确保完全不透明
                 // 不修改状态，让update逻辑继续处理
@@ -494,6 +482,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
      * 玩家死亡
      */
     private die(): void {
+        if (this.isDead) return;
+
+        this.isDead = true;
+        this.invincibleReasons.add('death');
         this.health = 0;
         this.setTint(0xff0000);
 
@@ -602,7 +594,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // 开始冲刺
         this.isDashing = true;
         this.canDash = false;
-        this.isInvincible = true; // 冲刺期间无敌
+        this.invincibleReasons.add('dash'); // 冲刺期间无敌
 
         // 中断攻击状态 (修复冲刺导致重复伤害的 Bug)
         if (this.weapon.isAttacking) {
@@ -627,7 +619,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // 冲刺持续时间后结束
         this.scene.time.delayedCall(PLAYER_CONFIG.dashDuration, () => {
             this.isDashing = false;
-            this.isInvincible = false;
+            this.invincibleReasons.delete('dash');
             this.setAlpha(1.0);
 
             // 恢复与敌人的碰撞

@@ -65,6 +65,8 @@ export class BlessingCard extends Phaser.GameObjects.Container {
         // 祝福名称
         const nameText = this.scene.add.text(0, -H / 2 + 85, this.blessing.name, {
             fontSize: '16px', color: '#ffffff', fontStyle: 'bold',
+            wordWrap: { width: W - 30, useAdvancedWrap: true },
+            align: 'center',
         });
         nameText.setOrigin(0.5);
         this.add(nameText);
@@ -101,7 +103,7 @@ export class BlessingCard extends Phaser.GameObjects.Container {
         const descText = this.scene.add.text(0, descY, this.blessing.description, {
             fontSize: `${descFontSize}px`,
             color: '#cccccc',
-            wordWrap: { width: W - 40 },
+            wordWrap: { width: W - 40, useAdvancedWrap: true },
             lineSpacing: 4,
             align: 'center',
         });

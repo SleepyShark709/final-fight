@@ -124,6 +124,10 @@ export class MagmaKnightEnemy extends Enemy {
         // 面朝玩家
         this.setFlipX(player.x < this.x);
         this.currentState = EnemyState.CHASE;
+        // 进入追击时重置连击计数，防止下次攻击从中间步开始
+        if (this.comboStep > 0 && !this.isAttacking) {
+            this.comboStep = 0;
+        }
 
         if (distanceToPlayer <= this.config.attackRange && this.canAttack) {
             // 发起连击

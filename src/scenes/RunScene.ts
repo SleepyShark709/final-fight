@@ -12,7 +12,6 @@ import {
     GAME_HEIGHT,
     DEPTH,
     ASSETS,
-    ENEMY_CONFIG,
 } from '@/utils/Constants';
 import { ENEMY_TABLE } from '@/config/EnemyTable';
 import { Player } from '@/entities/Player';
@@ -32,6 +31,7 @@ import { CAVERN_COMBAT_ROOMS, CAVERN_ELITE_ROOMS, CAVERN_BOSS_ROOM } from '@/dat
 import { LAVA_COMBAT_ROOMS, LAVA_ELITE_ROOMS, LAVA_BOSS_ROOM } from '@/data/rooms/lava/index';
 import { BlessingManager } from '@/combat/BlessingManager';
 import { MetaProgress } from '@/core/MetaProgress';
+import { SaveManager } from '@/core/SaveManager';
 import { StoneGolemBoss } from '@/entities/bosses/StoneGolemBoss';
 import { FireMageEnemy } from '@/entities/enemies/FireMageEnemy';
 import { EnemyFactory } from '@/entities/EnemyFactory';
@@ -135,7 +135,7 @@ export class RunScene extends Phaser.Scene {
         this.setupKeys();
 
         // UI
-        this.statsPanel = new PlayerStatsPanel(this, this.player);
+        this.statsPanel = new PlayerStatsPanel(this, this.player, this.blessingManager);
         this.createFpsText();
         this.createRoomInfoText();
 
@@ -150,6 +150,9 @@ export class RunScene extends Phaser.Scene {
 
         // 监听 Boss 击败
         this.events.on('boss-defeated', this.handleBossDefeated, this);
+
+        // 监听敌人击杀（记录统计）
+        this.events.on('enemy-killed', () => { this.runManager.recordKill(); });
 
         // 监听动态敌人生成（史莱姆分裂、Boss召唤等）
         this.events.on('enemy-spawned', this.handleEnemySpawned, this);
@@ -506,11 +509,14 @@ export class RunScene extends Phaser.Scene {
         if (enemyEntity.isDead) return;
         if (playerEntity.isInvincible) return;
         if (!enemyEntity.isAttacking) return;
+        if (enemyEntity.hitPlayerThisAttack) return; // 防止同一次攻击多次命中
 
         const isAttackingTowardsPlayer =
             (enemyEntity.flipX && playerEntity.x < enemyEntity.x) ||
             (!enemyEntity.flipX && playerEntity.x > enemyEntity.x);
         if (!isAttackingTowardsPlayer) return;
+
+        enemyEntity.hitPlayerThisAttack = true;
 
         const damageReduction = this.blessingManager.getDamageReduction();
         const reducedDamage = Math.round(enemyEntity.attackDamage * (1 - damageReduction));
@@ -654,9 +660,10 @@ export class RunScene extends Phaser.Scene {
             }
 
             // 敌人近战攻击玩家
-            const enemyAttackRange = ENEMY_CONFIG.skeleton.attackRange + 10;
+            const enemyAttackRange = enemyEntity.getAttackRange() + 10;
             if (
                 enemyEntity.isAttacking &&
+                !enemyEntity.hitPlayerThisAttack &&
                 !this.player.isInvincible &&
                 distance < enemyAttackRange
             ) {
@@ -665,6 +672,7 @@ export class RunScene extends Phaser.Scene {
                     (!enemyEntity.flipX && this.player.x > enemyEntity.x);
 
                 if (isAttackingTowardsPlayer) {
+                    enemyEntity.hitPlayerThisAttack = true;
                     const distDmgReduction = this.blessingManager.getDamageReduction();
                     const distReducedDamage = Math.round(enemyEntity.attackDamage * (1 - distDmgReduction));
                     CameraShake.shake(this.cameras.main, ShakeIntensity.MEDIUM);
@@ -867,6 +875,9 @@ export class RunScene extends Phaser.Scene {
      * Boss 击败处理
      */
     private handleBossDefeated = (_data: { bossId: string; bossName: string }): void => {
+        // 记录 Boss 击败
+        SaveManager.recordBossDefeat(_data.bossId);
+
         // Boss 击败后，推进到下一个区域或通关
         this.time.delayedCall(2000, () => {
             const isComplete = this.runManager.advanceBiome();
@@ -934,16 +945,21 @@ export class RunScene extends Phaser.Scene {
     private handlePlayerDeath(): void {
         // 检查死亡抗拒（复活）
         if (this.runManager.useDeathDefiance()) {
+            this.player.isDead = false;
             this.player.health = Math.round(this.player.maxHealth * 0.3);
             (this.player.body as Phaser.Physics.Arcade.Body).enable = true;
-            this.player.isInvincible = true;
+            this.player.removeInvincible('death');
+            this.player.addInvincible('revive');
             this.events.emit('player-health-changed', this.player.health, this.player.maxHealth);
             this.time.delayedCall(2000, () => {
-                this.player.isInvincible = false;
+                this.player.removeInvincible('revive');
             });
             console.log('[RunScene] 死亡抗拒触发！剩余:', this.runManager.getState().deathDefiances);
             return;
         }
+
+        // 防止重复处理
+        if (this.roomPhase === RoomPhase.TRANSITION) return;
 
         // 防止玩家死亡后仍触发房间清理 → 祝福选择的竞态条件
         this.roomPhase = RoomPhase.TRANSITION;

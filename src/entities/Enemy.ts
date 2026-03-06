@@ -40,6 +40,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     // 攻击属性
     public attackDamage: number;
     public isAttacking: boolean = false;
+    public hitPlayerThisAttack: boolean = false; // 防止同一次攻击多次命中玩家
 
     // 状态
     public isDead: boolean = false;
@@ -355,6 +356,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
         // 进入预备状态
         this.isPreparing = true;
         this.canAttack = false;
+        this.hitPlayerThisAttack = false; // 重置命中标记
         this.currentState = EnemyState.ATTACK;
 
         // 预备期间变黄色提示玩家
@@ -362,6 +364,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
         // 300ms预备后开始攻击
         this.scene.time.delayedCall(300, () => {
+            if (this.isDead) return; // 预备期间被击杀则中止
             this.clearTint();
             this.isPreparing = false;
             this.isAttacking = true;
@@ -380,6 +383,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.scene.time.delayedCall(this.config.attackCooldown, () => {
             this.canAttack = true;
         });
+    }
+
+    /** 获取攻击范围 */
+    public getAttackRange(): number {
+        return this.config.attackRange;
     }
 
     /**
@@ -468,12 +476,14 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
         // 受击效果 - 变红
         this.setTint(0xff0000);
         this.scene.time.delayedCall(200, () => {
+            if (this.isDead || !this.active) return;
             this.clearTint();
         });
 
         // 进入硬直状态，防止AI覆盖击退速度
         this.isStunned = true;
         this.scene.time.delayedCall(300, () => {
+            if (this.isDead || !this.active) return;
             this.isStunned = false;
         });
 
@@ -484,14 +494,17 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
         const actualKnockbackForce =
             this.config.knockbackForce / this.config.mass;
 
+        // 飞行敌人无重力，不施加垂直击退（避免持续上飘）
+        const verticalKnockback = body.allowGravity ? -80 : 0;
+
         if (knockbackDir !== 0) {
             body.setVelocityX(knockbackDir * actualKnockbackForce);
-            body.setVelocityY(-80); // 垂直击退保持不变
+            body.setVelocityY(verticalKnockback);
         } else {
             // 默认根据面向方向击退
             const defaultDir = this.flipX ? 1 : -1;
             body.setVelocityX(defaultDir * actualKnockbackForce);
-            body.setVelocityY(-80);
+            body.setVelocityY(verticalKnockback);
         }
 
         // Squash/Stretch 击退形变：横向拉伸 + 纵向压缩
@@ -518,6 +531,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     protected die(): void {
         this.isDead = true;
         this.currentState = EnemyState.DEAD;
+
+        // 通知场景敌人被击杀
+        this.scene.events.emit('enemy-killed');
 
         // 禁用物理
         (this.body as Phaser.Physics.Arcade.Body).enable = false;

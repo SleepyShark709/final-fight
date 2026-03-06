@@ -296,6 +296,7 @@ export class StoneGolemBoss extends Enemy {
             this.setTint(this.getPhaseColor());
             this.isPreparing = false;
             this.isAttacking = true;
+            this.hitPlayerThisAttack = false;
 
             this.playAttackAnimation();
 
@@ -446,6 +447,7 @@ export class StoneGolemBoss extends Enemy {
             this.isPreparing = false;
             this.isCharging = true;
             this.isAttacking = true;
+            this.hitPlayerThisAttack = false;
 
             // 高速冲刺
             body.setVelocityX(this.chargeDirection * this.chargeSpeed);
@@ -518,8 +520,15 @@ export class StoneGolemBoss extends Enemy {
         this.isDead = true;
         this.currentState = EnemyState.DEAD;
 
+        // 通知场景敌人被击杀（基类 die() 中负责，但此处重写未调用 super）
+        this.scene.events.emit('enemy-killed');
+
         const body = this.body as Phaser.Physics.Arcade.Body;
         body.enable = false;
+
+        // 销毁血条
+        if (this.healthBarBg) { this.healthBarBg.destroy(); }
+        if (this.healthBarFill) { this.healthBarFill.destroy(); }
 
         // 清理投射物
         this.rocks.forEach(r => r.destroy());

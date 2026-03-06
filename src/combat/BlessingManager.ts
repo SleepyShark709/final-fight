@@ -66,7 +66,7 @@ export class BlessingManager {
             for (const effect of blessing.effects) {
                 switch (effect.type) {
                     case 'damage_multiply':
-                        if (blessing.slot === 'attack' || blessing.slot === 'passive') {
+                        if (blessing.slot === 'attack' || blessing.slot === 'passive' || blessing.slot === 'skill') {
                             damage = Math.round(damage * effect.value);
                         }
                         break;
@@ -107,9 +107,9 @@ export class BlessingManager {
         for (const blessing of this.activeBlessings.values()) {
             for (const effect of blessing.effects) {
                 if (effect.type === 'crit_bonus') {
-                    if (blessing.id === 'thunder_skill') {
+                    if (blessing.slot === 'skill') {
                         critChanceBonus += effect.value;
-                    } else if (blessing.id === 'thunder_passive') {
+                    } else if (blessing.slot === 'passive') {
                         critMultiplierBonus += effect.value;
                     }
                 }

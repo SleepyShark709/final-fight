@@ -402,6 +402,7 @@ export class FireDragonBoss extends Enemy {
             this.setTint(this.getPhaseColor());
             this.isPreparing = false;
             this.isAttacking = true;
+            this.hitPlayerThisAttack = false;
 
             this.playAttackAnimation();
 
@@ -432,6 +433,7 @@ export class FireDragonBoss extends Enemy {
 
             this.isPreparing = false;
             this.isAttacking = true;
+            this.hitPlayerThisAttack = false;
             this.setTint(this.getPhaseColor());
 
             this.playAttackAnimation();
@@ -525,6 +527,7 @@ export class FireDragonBoss extends Enemy {
                 this.isPreparing = false;
                 this.isDiving = true;
                 this.isAttacking = true;
+            this.hitPlayerThisAttack = false;
 
                 // 记录目标位置（玩家当前位置）
                 this.diveTargetX = player.x;
@@ -785,9 +788,16 @@ export class FireDragonBoss extends Enemy {
         this.isDead = true;
         this.currentState = EnemyState.DEAD;
 
+        // 通知场景敌人被击杀（基类 die() 中负责，但此处重写未调用 super）
+        this.scene.events.emit('enemy-killed');
+
         const body = this.body as Phaser.Physics.Arcade.Body;
         body.enable = false;
         body.setAllowGravity(false);
+
+        // 销毁血条
+        if (this.healthBarBg) { this.healthBarBg.destroy(); }
+        if (this.healthBarFill) { this.healthBarFill.destroy(); }
 
         // 清理火雨标记
         this.fireRainMarkers.forEach(m => m.circle.destroy());

@@ -14,7 +14,7 @@ interface RunState {
     damageDealt: number;
     runShards: number;
     runGold: number;
-    currentBiome: string;
+    currentBiome: number;
 }
 
 export class DeathScene extends Phaser.Scene {
@@ -30,7 +30,7 @@ export class DeathScene extends Phaser.Scene {
             damageDealt: 0,
             runShards: 0,
             runGold: 0,
-            currentBiome: '未知',
+            currentBiome: 0,
         };
 
         // --- 持久化本次运行数据 ---

@@ -481,7 +481,7 @@ export class HubScene extends Phaser.Scene {
                 backgroundColor: '#000000aa',
                 padding: { x: 16, y: 10 },
                 align: 'center',
-                wordWrap: { width: GAME_WIDTH - 120 },
+                wordWrap: { width: GAME_WIDTH - 120, useAdvancedWrap: true },
             })
             .setOrigin(0.5, 0.5)
             .setDepth(DEPTH.UI + 10)

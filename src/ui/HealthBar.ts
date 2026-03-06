@@ -18,6 +18,9 @@ export class HealthBar {
     // 文字显示
     private healthText: Phaser.GameObjects.Text;
 
+    // 心形图标
+    private heartIcon: Phaser.GameObjects.Text;
+
     constructor(
         scene: Phaser.Scene,
         x: number,
@@ -58,10 +61,10 @@ export class HealthBar {
         this.healthText.setOrigin(0.5);
 
         // 添加血条图标（心形）
-        const heartIcon = scene.add.text(x - 20, y + height / 2, '❤', {
+        this.heartIcon = scene.add.text(x - 20, y + height / 2, '❤', {
             fontSize: '16px',
         });
-        heartIcon.setOrigin(0.5);
+        this.heartIcon.setOrigin(0.5);
     }
 
     /**
@@ -107,6 +110,7 @@ export class HealthBar {
         this.bar.setVisible(visible);
         this.border.setVisible(visible);
         this.healthText.setVisible(visible);
+        this.heartIcon.setVisible(visible);
     }
 
     /**
@@ -117,5 +121,6 @@ export class HealthBar {
         this.bar.destroy();
         this.border.destroy();
         this.healthText.destroy();
+        this.heartIcon.destroy();
     }
 }

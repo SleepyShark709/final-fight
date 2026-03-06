@@ -166,7 +166,7 @@ export class UpgradeScene extends Phaser.Scene {
                     stroke: '#000000',
                     strokeThickness: 2,
                     align: 'center',
-                    wordWrap: { width: UPGRADE.CARD_WIDTH - 24 },
+                    wordWrap: { width: UPGRADE.CARD_WIDTH - 24, useAdvancedWrap: true },
                 })
                 .setOrigin(0.5);
             container.add(descText);

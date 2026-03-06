@@ -134,7 +134,8 @@ export class RunManager {
         if (!raw) return null;
 
         const manager = new RunManager();
-        manager.state = raw as unknown as RunState;
+        // 与默认值合并，防止旧存档缺少新增字段导致 undefined 崩溃
+        manager.state = { ...manager.state, ...(raw as unknown as RunState) };
         manager.state.isRunActive = true;
         SaveManager.clearPausedRun();
         console.log('[RunManager] Run resumed at biome', manager.state.currentBiome);

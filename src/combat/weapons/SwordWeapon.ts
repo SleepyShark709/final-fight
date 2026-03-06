@@ -63,6 +63,7 @@ export class SwordWeapon extends WeaponBase {
             }
         };
 
+        this.currentAnimUpdateHandler = onAnimationUpdate;
         this.owner.on('animationupdate', onAnimationUpdate);
 
         // --- Animation complete: reset attack state ------------------------
@@ -71,6 +72,7 @@ export class SwordWeapon extends WeaponBase {
             (animation: Phaser.Animations.Animation) => {
                 if (animation.key === attackAnimKey) {
                     this.owner.off('animationupdate', onAnimationUpdate);
+                    this.currentAnimUpdateHandler = undefined;
 
                     // Short delay before resetting so the last frame lingers
                     this.scene.time.delayedCall(50, () => {

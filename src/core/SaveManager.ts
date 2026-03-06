@@ -53,7 +53,7 @@ export class SaveManager {
             const raw = localStorage.getItem(SAVE_KEY);
             if (raw) {
                 const parsed = JSON.parse(raw) as SaveData;
-                if (parsed.version < CURRENT_VERSION) {
+                if (!parsed.version || parsed.version < CURRENT_VERSION) {
                     return this.migrate(parsed);
                 }
                 this.data = parsed;
@@ -189,7 +189,11 @@ export class SaveManager {
     }
 
     static hasPausedRun(): boolean {
-        return localStorage.getItem(this.PAUSED_RUN_KEY) !== null;
+        try {
+            return localStorage.getItem(this.PAUSED_RUN_KEY) !== null;
+        } catch {
+            return false;
+        }
     }
 
     static clearPausedRun(): void {

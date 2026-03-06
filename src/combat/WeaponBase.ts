@@ -23,6 +23,9 @@ export abstract class WeaponBase {
     protected lastAttackTime: number = 0;
     protected readonly COMBO_WINDOW: number = 1000;
 
+    // 当前动画帧监听器引用（用于中断时清理）
+    protected currentAnimUpdateHandler?: Function;
+
     constructor(scene: Phaser.Scene, owner: Phaser.Physics.Arcade.Sprite, stats: WeaponStats) {
         this.scene = scene;
         this.owner = owner;
@@ -69,6 +72,11 @@ export abstract class WeaponBase {
 
     /** 中断攻击（冲刺时调用） */
     interruptAttack(): void {
+        // 清理动画帧监听器，防止泄漏
+        if (this.currentAnimUpdateHandler) {
+            this.owner.off('animationupdate', this.currentAnimUpdateHandler as any);
+            this.currentAnimUpdateHandler = undefined;
+        }
         this.resetAttack();
     }
 

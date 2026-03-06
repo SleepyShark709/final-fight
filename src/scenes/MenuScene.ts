@@ -65,7 +65,7 @@ export class MenuScene extends Phaser.Scene {
         const instructions = this.add.text(
             GAME_WIDTH / 2,
             GAME_HEIGHT - 80,
-            'A/D: 移动  |  K: 跳跃  |  J: 攻击  |  L: 技能  |  I: 背包',
+            'A/D: 移动  |  K: 跳跃  |  J: 攻击  |  L: 冲刺  |  U: 技能  |  I: 背包',
             {
                 fontSize: '16px',
                 fontFamily: 'Arial',
