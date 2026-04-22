@@ -35,6 +35,15 @@ import { SaveManager } from '@/core/SaveManager';
 import { StoneGolemBoss } from '@/entities/bosses/StoneGolemBoss';
 import { FireMageEnemy } from '@/entities/enemies/FireMageEnemy';
 import { EnemyFactory } from '@/entities/EnemyFactory';
+import { Audio } from '@/systems/AudioManager';
+import { PLAYER_CONFIG } from '@/utils/Constants';
+import { RunProgressBar } from '@/ui/RunProgressBar';
+
+// 玩家基础属性快照（用于祝福重算，不受升级/祝福污染）
+const PLAYER_BASE_STATS = {
+    speed: PLAYER_CONFIG.speed,
+    critChance: PLAYER_CONFIG.criticalChance,
+};
 
 /** 房间阶段 */
 enum RoomPhase {
@@ -82,6 +91,7 @@ export class RunScene extends Phaser.Scene {
     private fpsText?: Phaser.GameObjects.Text;
     private statsPanel?: PlayerStatsPanel;
     private roomInfoText?: Phaser.GameObjects.Text;
+    private runProgressBar?: RunProgressBar;
 
     // 出口区域（房间清理后激活）
     private exitZone?: Phaser.GameObjects.Zone;
@@ -92,6 +102,12 @@ export class RunScene extends Phaser.Scene {
 
     create(): void {
         this.cameras.main.fadeIn(500, 0, 0, 0);
+
+        // 防御性重置时间缩放（避免上次运行慢动作未恢复的残留）
+        this.anims.globalTimeScale = 1;
+        this.time.timeScale = 1;
+        this.tweens.timeScale = 1;
+        if (this.physics?.world) this.physics.world.timeScale = 1;
 
         // 初始化管理器
         this.roomGenerator = new RoomGenerator(this);
@@ -131,6 +147,10 @@ export class RunScene extends Phaser.Scene {
         // 加载第一个房间
         this.loadRoom(this.pickRoom());
 
+        // 根据区域播放 BGM
+        const biome = this.runManager.getCurrentBiome();
+        Audio.playBgm(biome === 0 ? 'cavern' : 'lava');
+
         // 监听键位
         this.setupKeys();
 
@@ -151,8 +171,21 @@ export class RunScene extends Phaser.Scene {
         // 监听 Boss 击败
         this.events.on('boss-defeated', this.handleBossDefeated, this);
 
-        // 监听敌人击杀（记录统计）
-        this.events.on('enemy-killed', () => { this.runManager.recordKill(); });
+        // 监听敌人击杀（记录统计 + 最后一击慢动作）
+        this.events.on('enemy-killed', () => {
+            this.runManager.recordKill();
+            // 房间内最后一个敌人被击杀：触发慢动作 + 清场音效
+            if (this.roomPhase === RoomPhase.COMBAT) {
+                // 下一帧再查询存活数，确保当前死亡事件已处理
+                this.time.delayedCall(16, () => {
+                    const alive = this.roomGenerator?.getAliveEnemyCount?.() ?? 1;
+                    if (alive === 0) {
+                        EffectsManager.createSlowMotion(this, 320, 0.35);
+                        Audio.play('room-clear');
+                    }
+                });
+            }
+        });
 
         // 监听动态敌人生成（史莱姆分裂、Boss召唤等）
         this.events.on('enemy-spawned', this.handleEnemySpawned, this);
@@ -163,6 +196,28 @@ export class RunScene extends Phaser.Scene {
     }
 
     // ===== 房间管理 =====
+
+    /**
+     * 把祝福的 speed_bonus / crit_bonus 等被动属性应用到 Player
+     * 每次祝福变化时调用（幂等：基于基础值重算，不会叠乘）
+     */
+    private applyBlessingStatBonuses(): void {
+        if (!this.player || !this.blessingManager) return;
+        const base = PLAYER_BASE_STATS;
+        const speedBonus = this.blessingManager.getSpeedBonus();
+        // 以升级 bonus 为基准（baseSpeed 已包含升级），speedBonus 再乘
+        const upgradeBonuses = MetaProgress.getStatBonuses();
+        this.player.moveSpeed = (base.speed + upgradeBonuses.speed) * (1 + speedBonus);
+
+        // 暴击率加成
+        let critBonus = 0;
+        for (const b of this.blessingManager.getActiveBlessings()) {
+            for (const eff of b.effects) {
+                if (eff.type === 'crit_bonus') critBonus += eff.value;
+            }
+        }
+        this.player.criticalChance = base.critChance + upgradeBonuses.critChance + critBonus;
+    }
 
     /**
      * 随机选一个当前区域的房间模板
@@ -215,6 +270,13 @@ export class RunScene extends Phaser.Scene {
 
         // 进入战斗阶段
         this.roomPhase = RoomPhase.COMBAT;
+
+        // Boss 房：切换 Boss BGM + 播放咆哮
+        if (config.type === 'boss') {
+            Audio.playBgm('boss');
+            this.time.delayedCall(400, () => Audio.play('boss-roar'));
+        }
+
         console.log(`[RunScene] 房间加载: ${config.id} (${this.runManager.getState().roomsCleared + 1}/${this.runManager.getState().roomsInBiome})`);
     }
 
@@ -248,12 +310,21 @@ export class RunScene extends Phaser.Scene {
         this.events.once('blessing-selected', () => {
             // 重新启用 RunScene 键盘输入
             if (this.input.keyboard) {
+                // 清空所有按键状态（禁用期间的 keyup 被吞掉，isDown 会卡住，
+                // 返回后玩家会沿原方向持续移动）
+                this.input.keyboard.resetKeys();
                 this.input.keyboard.enabled = true;
             }
             // 恢复物理
             this.physics.resume();
+            // 清零玩家速度与残留状态（蓄力光环、冲刺、按键卡住）
+            if (this.player) {
+                this.player.resetTransientInputState();
+            }
             // 创建出口
             this.createExit();
+            // 应用速度加成（speed_bonus 祝福）到玩家
+            this.applyBlessingStatBonuses();
         });
 
         // 启动祝福选择场景
@@ -434,22 +505,18 @@ export class RunScene extends Phaser.Scene {
     }
 
     private createRoomInfoText(): void {
-        this.roomInfoText = this.add.text(GAME_WIDTH / 2, 10, '', {
-            fontSize: '14px',
-            color: '#ffffff',
-            stroke: '#000000',
-            strokeThickness: 2,
-        });
-        this.roomInfoText.setOrigin(0.5, 0);
-        this.roomInfoText.setDepth(DEPTH.UI);
-        this.roomInfoText.setScrollFactor(0);
+        // 进度条（顶部中间）
+        this.runProgressBar = new RunProgressBar(this, GAME_WIDTH / 2 - 80, 24);
+        // 文字已整合到 RunProgressBar，保留 roomInfoText 为兼容旧引用（空文本）
+        this.roomInfoText = this.add.text(0, 0, '', { fontSize: '1px' });
+        this.roomInfoText.setVisible(false);
     }
 
     private updateRoomInfo(): void {
         const state = this.runManager.getState();
         const biomeNames = ['石窟', '熔岩'];
         const biomeName = biomeNames[state.currentBiome] || '未知';
-        this.roomInfoText?.setText(`${biomeName} - 房间 ${state.roomsCleared + 1}/${state.roomsInBiome}`);
+        this.runProgressBar?.update(biomeName, state.roomsCleared, state.roomsInBiome);
     }
 
     // ===== 战斗处理（从 GameScene 复用） =====

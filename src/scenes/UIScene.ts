@@ -13,10 +13,18 @@ import {
 import { HealthBar } from '../ui/HealthBar';
 import { Inventory } from '../ui/Inventory';
 import { Player } from '../entities/Player';
+import { WeaponIndicator } from '../ui/WeaponIndicator';
+import { BlessingTray } from '../ui/BlessingTray';
 
 export class UIScene extends Phaser.Scene {
     // 血条组件
     private healthBar!: HealthBar;
+
+    // 武器指示器
+    private weaponIndicator?: WeaponIndicator;
+
+    // 祝福托盘
+    private blessingTray?: BlessingTray;
 
     // 背包组件
     private inventory!: Inventory;
@@ -41,7 +49,13 @@ export class UIScene extends Phaser.Scene {
 
     create(data?: { parentScene?: string }): void {
         // 创建血条
-        this.healthBar = new HealthBar(this, 20, 20, 200, 20);
+        this.healthBar = new HealthBar(this, 52, 22, 200, 22);
+
+        // 武器指示器（左下）
+        this.weaponIndicator = new WeaponIndicator(this, 70, GAME_HEIGHT - 50);
+
+        // 祝福托盘（顶部，血条右侧）
+        this.blessingTray = new BlessingTray(this, 280, 36);
 
         // 创建背包
         this.inventory = new Inventory(this);
@@ -60,13 +74,25 @@ export class UIScene extends Phaser.Scene {
         if (gameScene?.player) {
             this.player = gameScene.player;
             this.healthBar.update(this.player.health, this.player.maxHealth);
+            this.weaponIndicator?.setPlayer(this.player);
         }
 
         // 也监听事件（以防顺序问题）
         gameScene?.events.on('player-created', (player: Player) => {
             this.player = player;
             this.healthBar.update(this.player.health, this.player.maxHealth);
+            this.weaponIndicator?.setPlayer(this.player);
         });
+
+        // 接入祝福管理器（RunScene 独有）
+        if (gameScene && 'blessingManager' in gameScene) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            this.blessingTray?.setBlessingManager((gameScene as any).blessingManager);
+            // 监听祝福选择，刷新 UI
+            gameScene.events.on('blessing-selected', () => {
+                this.blessingTray?.refresh();
+            });
+        }
 
         // 监听连击事件
         gameScene?.events.on('combo-count-changed', (count: number) => {
@@ -170,42 +196,63 @@ export class UIScene extends Phaser.Scene {
     }
 
     /**
-     * 创建暂停菜单
+     * 创建暂停菜单（升级版：半透明背景 + 卡片式面板 + 操作提示）
      */
     private createPauseMenu(): void {
         this.pauseMenu = this.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2);
         this.pauseMenu.setDepth(DEPTH.UI + 10);
         this.pauseMenu.setVisible(false);
 
-        // 半透明黑色背景
+        // 半透明渐变背景
         const overlay = this.add.graphics();
-        overlay.fillStyle(0x000000, 0.7);
-        overlay.fillRect(
-            -GAME_WIDTH / 2,
-            -GAME_HEIGHT / 2,
-            GAME_WIDTH,
-            GAME_HEIGHT,
-        );
+        overlay.fillStyle(0x0a0a18, 0.82);
+        overlay.fillRect(-GAME_WIDTH / 2, -GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT);
 
-        // 暂停文字
-        const pauseText = this.add.text(0, -50, '游戏暂停', {
-            fontSize: '48px',
-            fontFamily: 'Arial',
-            color: '#ffffff',
-            stroke: '#000000',
+        // 中央卡片面板
+        const cardW = 440;
+        const cardH = 300;
+        const panel = this.add.graphics();
+        panel.fillStyle(0x1b1e2a, 0.95);
+        panel.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 12);
+        panel.lineStyle(3, 0x5a6dd0, 0.8);
+        panel.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 12);
+        // 顶部装饰线
+        panel.fillStyle(0x7389ea, 0.9);
+        panel.fillRect(-cardW / 2 + 30, -cardH / 2 + 24, cardW - 60, 2);
+
+        // 暂停标题
+        const pauseText = this.add.text(0, -cardH / 2 + 50, '⏸  游戏暂停', {
+            fontSize: '36px',
+            fontFamily: 'Arial Black, Arial',
+            color: '#e8ebff',
+            stroke: '#1b1e2a',
             strokeThickness: 4,
         });
         pauseText.setOrigin(0.5);
 
-        // 继续游戏提示
-        const resumeText = this.add.text(0, 30, '按 ESC 继续游戏', {
-            fontSize: '24px',
-            fontFamily: 'Arial',
-            color: '#aaaaaa',
-        });
-        resumeText.setOrigin(0.5);
+        // 分隔
+        const divider = this.add.graphics();
+        divider.fillStyle(0x44486a, 0.6);
+        divider.fillRect(-cardW / 2 + 60, -cardH / 2 + 96, cardW - 120, 1);
 
-        this.pauseMenu.add([overlay, pauseText, resumeText]);
+        // 操作说明
+        const hints = [
+            '[ESC]     继续游戏',
+            '[C]        属性面板',
+            '[I]         背包',
+            '[P]        调试信息',
+        ];
+        hints.forEach((line, i) => {
+            const t = this.add.text(0, -cardH / 2 + 130 + i * 30, line, {
+                fontSize: '18px',
+                fontFamily: 'Courier, monospace',
+                color: '#c0c7e8',
+            });
+            t.setOrigin(0.5);
+            this.pauseMenu.add(t);
+        });
+
+        this.pauseMenu.add([overlay, panel, pauseText, divider]);
     }
 
     /**
@@ -216,5 +263,7 @@ export class UIScene extends Phaser.Scene {
         if (this.player) {
             this.healthBar.update(this.player.health, this.player.maxHealth);
         }
+        // 更新武器指示器
+        this.weaponIndicator?.update();
     }
 }

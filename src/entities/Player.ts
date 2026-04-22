@@ -10,6 +10,8 @@ import {
 } from '../utils/Constants';
 import { WeaponBase } from '../combat/WeaponBase';
 import { WeaponFactory } from '../combat/WeaponFactory';
+import { EffectsManager } from '../utils/EffectsManager';
+import { Audio } from '../systems/AudioManager';
 
 /** 场景需要提供 playerEnemyCollider 以支持冲刺穿越 */
 interface SceneWithCollider extends Phaser.Scene {
@@ -82,6 +84,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     private isDashing: boolean = false;
     private canDash: boolean = true;
     private dashDirection: number = 1;
+    private dashAfterimageEvent?: Phaser.Time.TimerEvent;
+
+    // 落地检测
+    private wasOnFloor: boolean = true;
+    private fallVelocityBeforeLand: number = 0;
+
+    // 蓄力攻击
+    private chargeStartTime: number = 0;
+    private isCharging: boolean = false;
+    private readonly CHARGE_THRESHOLD: number = 500; // ms, 超过阈值视为蓄力
+    public chargeMultiplier: number = 1; // 当前攻击的蓄力倍率
+    private chargeAura?: Phaser.GameObjects.Graphics;
+
 
     // 命中连击计数（用于 UI 显示，仅在实际命中敌人时递增）
     public hitComboCount: number = 0;
@@ -199,6 +214,33 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
+     * 重置瞬时输入/动作状态 —— 从"按键冻结期"（如祝福选择）恢复时调用
+     *
+     * 清理：输入缓冲、蓄力光环/计时、冲刺残留、击退硬直、速度。
+     * 不清：血量、无敌、武器、连击数。
+     */
+    public resetTransientInputState(): void {
+        // 速度
+        const body = this.body as Phaser.Physics.Arcade.Body | null;
+        if (body) body.setVelocity(0, 0);
+        // 输入缓冲
+        this.bufferedAttack = false;
+        this.bufferedAttackTime = 0;
+        // 蓄力
+        this.chargeStartTime = 0;
+        this.chargeMultiplier = 1;
+        if (this.isCharging) {
+            this.isCharging = false;
+            this.showChargeAura(false);
+        }
+        // 冲刺残影定时器
+        this.dashAfterimageEvent?.remove(false);
+        this.dashAfterimageEvent = undefined;
+        // 硬直
+        this.isStunned = false;
+    }
+
+    /**
      * 命中敌人时调用 —— 更新命中连击数并通知 UI
      * 与按键动画连击（comboCount）分离，只在实际打到敌人时才计数
      */
@@ -228,10 +270,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
-     * 获取当前攻击伤害（武器基础伤害 + 升级加成）
+     * 获取当前攻击伤害（武器基础伤害 + 升级加成 + 蓄力倍率）
      */
     public getCurrentDamage(): number {
-        return this.weapon.getCurrentDamage() + this.attackUpgradeBonus;
+        return Math.round((this.weapon.getCurrentDamage() + this.attackUpgradeBonus) * this.chargeMultiplier);
     }
 
     /**
@@ -272,8 +314,42 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // 处理武器技能输入
         this.handleWeaponSkill();
 
+        // 落地扬尘检测
+        this.checkLanding();
+
         // 更新动画状态
         this.updateAnimation();
+    }
+
+    /**
+     * 检测从空中落地，生成扬尘粒子
+     */
+    private checkLanding(): void {
+        const body = this.body as Phaser.Physics.Arcade.Body;
+        const onFloor = body.onFloor();
+
+        // 记录下落时的速度
+        if (!onFloor && body.velocity.y > 0) {
+            this.fallVelocityBeforeLand = body.velocity.y;
+        }
+
+        // 从空中落地：生成扬尘
+        if (onFloor && !this.wasOnFloor) {
+            const strength = Phaser.Math.Clamp(
+                this.fallVelocityBeforeLand / 400,
+                0.5,
+                1.6,
+            );
+            // 脚底位置（sprite 的 y + height/2 附近）
+            const footY = this.y + this.displayHeight / 2 - 8;
+            EffectsManager.createLandingDust(this.scene, this.x, footY, strength);
+            if (strength > 0.7) {
+                Audio.play('land', { volume: Phaser.Math.Clamp(strength, 0.5, 1.5) });
+            }
+            this.fallVelocityBeforeLand = 0;
+        }
+
+        this.wasOnFloor = onFloor;
     }
 
     /**
@@ -307,6 +383,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         if (Phaser.Input.Keyboard.JustDown(this.keys.jump) && body.onFloor()) {
             body.setVelocityY(-PLAYER_CONFIG.jumpForce);
             this.currentState = PlayerState.JUMP;
+            Audio.play('jump');
         }
 
         // 松开跳跃键时，如果仍在上升阶段则削减速度（实现小跳）
@@ -316,25 +393,114 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
-     * 处理攻击（支持输入缓冲，委托给武器）
+     * 处理攻击（press-fire + hold-release-heavy 混合模型）
+     *
+     * - 按下 J：立即触发普通攻击（保持按键响应性）
+     * - 持续按住 J 超过阈值：显示蓄力光环
+     * - 松开 J：若曾触发蓄力光环，触发一次蓄力重击（x2 伤害 + 震屏）
      */
     private handleAttack(): void {
-        // 清除超时的缓冲输入
+        const now = this.scene.time.now;
+
+        // 缓冲超时清理
         if (
             this.bufferedAttack &&
-            this.scene.time.now - this.bufferedAttackTime > this.ATTACK_BUFFER_WINDOW
+            now - this.bufferedAttackTime > this.ATTACK_BUFFER_WINDOW
         ) {
             this.bufferedAttack = false;
         }
 
-        const shouldAttack =
-            this.bufferedAttack ||
-            Phaser.Input.Keyboard.JustDown(this.keys.attack);
+        // 按下 J：立即普通攻击 + 记录蓄力起始
+        if (Phaser.Input.Keyboard.JustDown(this.keys.attack)) {
+            this.chargeStartTime = now;
+            if (!this.weapon.isAttacking) {
+                this.chargeMultiplier = 1.0;
+                this.weapon.attack();
+                this.currentState = PlayerState.ATTACK;
+                const combo = this.weapon.comboCount;
+                Audio.play('slash', { pitch: 1 + combo * 0.08 });
+            } else {
+                // 在动画期间按下 → 走缓冲
+                this.bufferedAttack = true;
+                this.bufferedAttackTime = now;
+            }
+        }
 
-        if (shouldAttack && !this.weapon.isAttacking) {
+        // 持续按住：超过阈值 → 蓄力光环
+        if (this.keys.attack.isDown && this.chargeStartTime > 0) {
+            const heldMs = now - this.chargeStartTime;
+            if (heldMs >= this.CHARGE_THRESHOLD && !this.isCharging) {
+                this.isCharging = true;
+                this.showChargeAura(true);
+                Audio.play('ui-select', { pitch: 0.5, volume: 0.4 });
+            }
+        }
+
+        // 松开：若蓄力激活，触发重击
+        if (Phaser.Input.Keyboard.JustUp(this.keys.attack)) {
+            const heldMs = now - this.chargeStartTime;
+            this.chargeStartTime = 0;
+            if (this.isCharging) {
+                this.showChargeAura(false);
+                this.isCharging = false;
+                if (heldMs >= this.CHARGE_THRESHOLD && !this.weapon.isAttacking) {
+                    this.chargeMultiplier = 2.0;
+                    this.weapon.attack();
+                    this.currentState = PlayerState.ATTACK;
+                    Audio.play('attack-heavy');
+                    if (this.scene.cameras?.main) this.scene.cameras.main.shake(130, 0.007);
+                    // 重击后重置倍率
+                    this.scene.time.delayedCall(80, () => { this.chargeMultiplier = 1.0; });
+                } else {
+                    this.chargeMultiplier = 1.0;
+                }
+            }
+        }
+
+        // 缓冲攻击释放（动画期间按下的下一段）
+        if (this.bufferedAttack && !this.weapon.isAttacking) {
             this.bufferedAttack = false;
+            this.chargeMultiplier = 1.0;
             this.weapon.attack();
             this.currentState = PlayerState.ATTACK;
+            const combo = this.weapon.comboCount;
+            Audio.play('slash', { pitch: 1 + combo * 0.08 });
+        }
+    }
+
+    /** 显隐蓄力光环（脚下蓝色脉冲圆） */
+    private showChargeAura(on: boolean): void {
+        if (on) {
+            if (this.chargeAura) this.chargeAura.destroy();
+            const g = this.scene.add.graphics();
+            g.setDepth(25);
+            this.chargeAura = g;
+            const drawFrame = (progress: number) => {
+                g.clear();
+                const r = 18 + progress * 12;
+                g.lineStyle(2, 0x66ccff, 0.9 - progress * 0.5);
+                g.strokeCircle(this.x, this.y + this.displayHeight / 2 - 6, r);
+                g.lineStyle(1, 0xaaeeff, 0.6 - progress * 0.3);
+                g.strokeCircle(this.x, this.y + this.displayHeight / 2 - 6, r - 6);
+            };
+            this.scene.tweens.add({
+                targets: { v: 0 },
+                v: 1,
+                duration: 600,
+                repeat: -1,
+                onUpdate: (tween) => drawFrame(tween.progress),
+            });
+        } else {
+            if (this.chargeAura) {
+                const g = this.chargeAura;
+                this.scene.tweens.add({
+                    targets: g,
+                    alpha: 0,
+                    duration: 120,
+                    onComplete: () => g.destroy(),
+                });
+                this.chargeAura = undefined;
+            }
         }
     }
 
@@ -346,6 +512,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             if (!this.weapon.isSkillReady()) return;
             this.weapon.skill();
             this.currentState = PlayerState.ATTACK;
+            // 技能音效（重攻击 + 元素）
+            Audio.play('attack-heavy');
         }
     }
 
@@ -429,6 +597,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             this.maxHealth,
         );
 
+        // 受伤音效
+        Audio.play('hurt');
+
         // 发送血量变化事件
         this.scene.events.emit(
             'player-health-changed',
@@ -491,6 +662,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
         // 禁用物理
         (this.body as Phaser.Physics.Arcade.Body).enable = false;
+
+        // 死亡音效
+        Audio.play('death-player');
 
         // 发送死亡事件
         this.scene.events.emit('player-died');
@@ -611,16 +785,36 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // 设置冲刺速度
         body.setVelocityX(PLAYER_CONFIG.dashSpeed * this.dashDirection);
 
+        // 冲刺音效
+        Audio.play('dash');
+
         console.log('[Dash] 开始冲刺，方向:', this.dashDirection);
 
         // 视觉效果：设置半透明
         this.setAlpha(0.6);
+
+        // 启动残影拖尾（每 35ms 复制一次当前帧）
+        EffectsManager.createAfterimage(this.scene, this);
+        this.dashAfterimageEvent?.remove(false);
+        this.dashAfterimageEvent = this.scene.time.addEvent({
+            delay: 35,
+            repeat: Math.ceil(PLAYER_CONFIG.dashDuration / 35),
+            callback: () => {
+                if (this.isDashing && this.active) {
+                    EffectsManager.createAfterimage(this.scene, this);
+                }
+            },
+        });
 
         // 冲刺持续时间后结束
         this.scene.time.delayedCall(PLAYER_CONFIG.dashDuration, () => {
             this.isDashing = false;
             this.invincibleReasons.delete('dash');
             this.setAlpha(1.0);
+
+            // 停止残影
+            this.dashAfterimageEvent?.remove(false);
+            this.dashAfterimageEvent = undefined;
 
             // 恢复与敌人的碰撞
             if (sceneWithCollider.playerEnemyCollider) {

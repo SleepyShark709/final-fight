@@ -4,6 +4,7 @@
  */
 import Phaser from 'phaser';
 import { SCENES, GAME_WIDTH, GAME_HEIGHT } from '../utils/Constants';
+import { Audio } from '../systems/AudioManager';
 
 export class MenuScene extends Phaser.Scene {
     constructor() {
@@ -13,6 +14,9 @@ export class MenuScene extends Phaser.Scene {
     create(): void {
         // 创建渐变背景
         this.createBackground();
+
+        // 菜单 BGM
+        Audio.playBgm('menu');
 
         // 游戏标题
         const title = this.add.text(
@@ -82,28 +86,84 @@ export class MenuScene extends Phaser.Scene {
             yoyo: true,
             repeat: -1,
         });
+
+        // 键盘启动（SPACE / ENTER）
+        const keyboard = this.input.keyboard;
+        if (keyboard) {
+            keyboard.once('keydown-SPACE', () => { Audio.play('ui-select'); this.startGame(); });
+            keyboard.once('keydown-ENTER', () => { Audio.play('ui-select'); this.startGame(); });
+        }
     }
 
     /**
-     * 创建背景
+     * 创建背景 — 动态渐变 + 呼吸星空 + 地平线火光
      */
     private createBackground(): void {
-        // 创建背景图形
-        const graphics = this.add.graphics();
+        // 底色渐变（双层 Graphics 模拟垂直渐变）
+        const sky = this.add.graphics();
+        sky.fillStyle(0x140020, 1);
+        sky.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-        // 深蓝色背景
-        graphics.fillStyle(0x1a1a2e, 1);
-        graphics.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        // 中间层 — 紫色雾
+        const fog = this.add.graphics();
+        fog.fillStyle(0x3a1555, 0.55);
+        fog.fillRect(0, GAME_HEIGHT * 0.35, GAME_WIDTH, GAME_HEIGHT * 0.45);
 
-        // 添加一些装饰性粒子/星星
-        for (let i = 0; i < 50; i++) {
+        // 底部橙色火光
+        const glow = this.add.graphics();
+        glow.fillStyle(0xff5d1f, 0.35);
+        glow.fillRect(0, GAME_HEIGHT * 0.78, GAME_WIDTH, GAME_HEIGHT * 0.22);
+        const emberGlow = this.add.graphics();
+        emberGlow.fillStyle(0xffaa44, 0.25);
+        emberGlow.fillRect(0, GAME_HEIGHT * 0.88, GAME_WIDTH, GAME_HEIGHT * 0.12);
+
+        // 星空 — 每颗星独立 Graphics 以支持闪烁
+        for (let i = 0; i < 70; i++) {
             const x = Phaser.Math.Between(0, GAME_WIDTH);
-            const y = Phaser.Math.Between(0, GAME_HEIGHT);
-            const size = Phaser.Math.Between(1, 3);
-            const alpha = Phaser.Math.FloatBetween(0.3, 0.8);
+            const y = Phaser.Math.Between(0, GAME_HEIGHT * 0.55);
+            const size = Phaser.Math.FloatBetween(1, 2.8);
+            const star = this.add.circle(x, y, size, 0xffffff, Phaser.Math.FloatBetween(0.35, 0.9));
+            // 缓慢呼吸闪烁
+            this.tweens.add({
+                targets: star,
+                alpha: { from: star.alpha, to: star.alpha * 0.2 },
+                scale: { from: 1, to: 0.6 },
+                duration: Phaser.Math.Between(1800, 3500),
+                yoyo: true,
+                repeat: -1,
+                delay: Phaser.Math.Between(0, 2000),
+            });
+        }
 
-            graphics.fillStyle(0xffffff, alpha);
-            graphics.fillCircle(x, y, size);
+        // 远处山脉剪影
+        const mountains = this.add.graphics();
+        mountains.fillStyle(0x0d0515, 1);
+        mountains.beginPath();
+        mountains.moveTo(0, GAME_HEIGHT * 0.72);
+        const peaks = 6;
+        for (let i = 0; i <= peaks; i++) {
+            const px = (i / peaks) * GAME_WIDTH;
+            const py = GAME_HEIGHT * 0.72 - Phaser.Math.Between(0, 50);
+            mountains.lineTo(px, py);
+        }
+        mountains.lineTo(GAME_WIDTH, GAME_HEIGHT);
+        mountains.lineTo(0, GAME_HEIGHT);
+        mountains.closePath();
+        mountains.fillPath();
+
+        // 飘散的余烬粒子（向上升起）
+        for (let i = 0; i < 18; i++) {
+            const x = Phaser.Math.Between(0, GAME_WIDTH);
+            const ember = this.add.circle(x, GAME_HEIGHT + 20, Phaser.Math.FloatBetween(1.5, 3), 0xff9955, 0.85);
+            this.tweens.add({
+                targets: ember,
+                y: -20,
+                x: x + Phaser.Math.Between(-80, 80),
+                alpha: 0,
+                duration: Phaser.Math.Between(4500, 8000),
+                delay: Phaser.Math.Between(0, 4000),
+                repeat: -1,
+            });
         }
     }
 
@@ -146,6 +206,7 @@ export class MenuScene extends Phaser.Scene {
             bg.fillRoundedRect(-100, -25, 200, 50, 10);
             bg.lineStyle(3, 0xffffff, 1);
             bg.strokeRoundedRect(-100, -25, 200, 50, 10);
+            Audio.play('ui-click');
         });
 
         container.on('pointerout', () => {
@@ -156,7 +217,7 @@ export class MenuScene extends Phaser.Scene {
             bg.strokeRoundedRect(-100, -25, 200, 50, 10);
         });
 
-        container.on('pointerdown', callback);
+        container.on('pointerdown', () => { Audio.play('ui-select'); callback(); });
 
         return container;
     }

@@ -14,6 +14,7 @@ import {
 import { Player } from '@/entities/Player';
 import { InputController } from '@/systems/InputController';
 import { RunManager } from '@/core/RunManager';
+import { Audio } from '@/systems/AudioManager';
 
 // ===== NPC 配置 =====
 interface NpcConfig {
@@ -114,6 +115,16 @@ export class HubScene extends Phaser.Scene {
     create(): void {
         // 背景色：深邃洞穴
         this.cameras.main.setBackgroundColor('#1a1025');
+
+        // 防御性重置：上一场景的慢动作若没来得及恢复（例如与死亡竞态），
+        // 会导致 HubScene 的动画/移动看起来"卡住"。此处强制恢复到正常速度。
+        this.anims.globalTimeScale = 1;
+        this.time.timeScale = 1;
+        this.tweens.timeScale = 1;
+        if (this.physics?.world) this.physics.world.timeScale = 1;
+
+        // 据点 BGM
+        Audio.playBgm('hub');
 
         // 世界边界 = 画面大小（不滚屏）
         this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);

@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { Player } from './Player';
 import { EffectsManager } from '../utils/EffectsManager';
 import { StatusEffect, StatusEffectProcessor, STATUS_EFFECT_COLORS } from '@/combat/StatusEffects';
+import { Audio } from '../systems/AudioManager';
 
 // 敌人状态枚举
 export enum EnemyState {
@@ -463,6 +464,15 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     public takeDamage(damage: number, knockbackDir: number = 0): void {
         if (this.isDead) return;
 
+        // 处决判定：当前血量 ≤ 20% 且本次伤害致死 → 触发处决
+        const healthBefore = this.health;
+        const executeThreshold = this.maxHealth * 0.2;
+        const willKill = (healthBefore - damage) <= 0;
+        const canExecute = willKill && healthBefore <= executeThreshold && healthBefore > 0;
+        if (canExecute) {
+            this.triggerExecute();
+        }
+
         this.health -= damage;
 
         // 调试日志
@@ -473,9 +483,15 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
         // 更新血条
         this.updateHealthBar();
 
-        // 受击效果 - 变红
+        // 受击瞬白闪烁（脆打击感）
+        EffectsManager.createHitFlash(this.scene, this);
+
+        // 命中音效（重伤使用 hit-heavy）
+        Audio.play(damage >= 25 ? 'hit-heavy' : 'hit', { pitch: 1 + Phaser.Math.FloatBetween(-0.1, 0.1) });
+
+        // 受击效果 - 短暂变红
         this.setTint(0xff0000);
-        this.scene.time.delayedCall(200, () => {
+        this.scene.time.delayedCall(120, () => {
             if (this.isDead || !this.active) return;
             this.clearTint();
         });
@@ -526,6 +542,58 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     /**
+     * 处决：敌人血量极低时的致命一击特效
+     * 全屏金色闪光 + 额外放大的斩击 + 慢动作 + 特殊音效
+     */
+    private triggerExecute(): void {
+        const scene = this.scene;
+        const cam = scene.cameras.main;
+
+        // 金色闪光
+        const flash = scene.add.graphics();
+        flash.setScrollFactor(0);
+        flash.setDepth(500);
+        flash.fillStyle(0xffdd44, 0.55);
+        flash.fillRect(0, 0, cam.width, cam.height);
+        scene.tweens.add({
+            targets: flash,
+            alpha: 0,
+            duration: 220,
+            onComplete: () => flash.destroy(),
+        });
+
+        // 放大的金色斩击
+        EffectsManager.createSlashEffect(scene, this.x, this.y, true, true);
+
+        // 周围金色粒子爆散
+        for (let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2;
+            const dot = scene.add.circle(this.x, this.y, 4, 0xffdd44, 1);
+            dot.setDepth(46);
+            const dx = Math.cos(angle) * 80;
+            const dy = Math.sin(angle) * 80;
+            scene.tweens.add({
+                targets: dot,
+                x: this.x + dx,
+                y: this.y + dy,
+                alpha: 0,
+                scale: 0.3,
+                duration: 420,
+                ease: 'Quad.easeOut',
+                onComplete: () => dot.destroy(),
+            });
+        }
+
+        // 震屏与慢动作
+        cam.shake(180, 0.012);
+        EffectsManager.createSlowMotion(scene, 200, 0.25);
+
+        // 专属处决音
+        Audio.play('crit', { pitch: 1.2, volume: 1.2 });
+        Audio.play('room-clear', { volume: 0.5 });
+    }
+
+    /**
      * 死亡
      */
     protected die(): void {
@@ -558,6 +626,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
         // 死亡粒子爆散
         EffectsManager.createDeathParticles(this.scene, this.x, this.y - 20);
+
+        // 死亡音效
+        Audio.play('death', { pitch: 1 + Phaser.Math.FloatBetween(-0.15, 0.15) });
 
         // 渐隐消失
         this.scene.tweens.add({

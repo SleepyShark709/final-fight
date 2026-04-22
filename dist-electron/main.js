@@ -1,45 +1,31 @@
-import { app, BrowserWindow } from "electron";
-import path from "path";
-if (process.platform === "win32") {
-  app.commandLine.appendSwitch("disable-gpu-sandbox");
-  app.commandLine.appendSwitch("no-sandbox");
-}
-const isDev = process.env.VITE_DEV_SERVER_URL !== void 0;
-let mainWindow = null;
-function createWindow() {
-  mainWindow = new BrowserWindow({
+import { app as e, BrowserWindow as i } from "electron";
+import t from "path";
+process.platform === "win32" && (e.commandLine.appendSwitch("disable-gpu-sandbox"), e.commandLine.appendSwitch("no-sandbox"));
+const a = process.env.VITE_DEV_SERVER_URL !== void 0;
+let n = null;
+function o() {
+  n = new i({
     width: 1280,
     height: 720,
-    useContentSize: true,
+    useContentSize: !0,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: !0,
+      contextIsolation: !1,
       // For simple games, this is often easier. strictly, should be true with preload.
-      webSecurity: false
+      webSecurity: !1
       // Be careful with this in production apps, but fine for self-contained games
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: !0
     // Hide menu bar on Windows/Linux
-  });
-  if (isDev) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(path.join(app.getAppPath(), "dist", "index.html"));
-  }
-  mainWindow.on("closed", () => {
-    mainWindow = null;
+  }), a ? n.loadURL(process.env.VITE_DEV_SERVER_URL) : n.loadFile(t.join(e.getAppPath(), "dist", "index.html")), n.on("closed", () => {
+    n = null;
   });
 }
-app.whenReady().then(() => {
-  createWindow();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+e.whenReady().then(() => {
+  o(), e.on("activate", () => {
+    i.getAllWindows().length === 0 && o();
   });
 });
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+e.on("window-all-closed", () => {
+  process.platform !== "darwin" && e.quit();
 });

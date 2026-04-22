@@ -23,6 +23,11 @@ export class DeathScene extends Phaser.Scene {
     }
 
     create(data: { runState: RunState }): void {
+        // 防御性重置时间缩放（避免死亡与慢动作竞态导致 DeathScene 卡顿）
+        this.anims.globalTimeScale = 1;
+        this.time.timeScale = 1;
+        this.tweens.timeScale = 1;
+
         const runState = data.runState ?? {
             kills: 0,
             roomsCleared: 0,
